@@ -1,16 +1,10 @@
 use std::fmt::Display;
 
-use colored::Colorize;
+use crate::{MaybeTile, Board, Tile};
 
-use crate::{Tile, MaybeTile, Board, TileKind, Direction};
-
-impl Display for Tile {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.kind)
-    }
-}
-
-impl Display for MaybeTile {
+impl<T> Display for MaybeTile<T>
+where T: Display + Tile
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MaybeTile::Undecided(_) => write!(f, "?"),
@@ -19,7 +13,9 @@ impl Display for MaybeTile {
     }
 }
 
-impl Display for Board {
+impl<T> Display for Board<T>
+where T: Display + Tile
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for row in &self.tiles {
             for col in row {
@@ -29,26 +25,5 @@ impl Display for Board {
         };
 
         std::fmt::Result::Ok(())
-    }
-}
-
-impl Display for TileKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let character = match self {
-            TileKind::Water => "~".blue(),
-            TileKind::Ground => "O".bold().on_green(),
-            TileKind::Tree => "B".green(),
-            TileKind::House(dir) => match dir {
-                Direction::North => "#".magenta().on_blue(),
-                Direction::East => "#".magenta().on_green(),
-                Direction::South => "#".magenta(),
-                Direction::West => "#".magenta().on_yellow(),
-            },
-            TileKind::Road => "-".purple(),
-            TileKind::Hut => "v".red(),
-            TileKind::Mountain => "X".on_red(),
-            TileKind::Sand => "~".yellow(),
-        };
-        write!(f, "{}", character)
     }
 }

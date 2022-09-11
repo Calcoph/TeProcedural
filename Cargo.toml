@@ -19,9 +19,3 @@ path = "../tile-engine/te-player"
 
 [dependencies.te-gamepad]
 path = "../tile-engine/te-gamepad"
-
-[profile.dev.package.te-renderer]
-opt-level = 3
-
-[profile.dev.package.te-player]
-opt-level = 3
