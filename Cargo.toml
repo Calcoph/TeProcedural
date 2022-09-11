@@ -6,3 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+rand = "0.8.5"
+colored = "2.0.0"
+pollster = "0.2.5"
+image = "0.24.3"
+
+[dependencies.te-renderer]
+path = "../tile-engine/te-renderer"
+
+[dependencies.te-player]
+path = "../tile-engine/te-player"
+
+[dependencies.te-gamepad]
+path = "../tile-engine/te-gamepad"
+
+[profile.dev.package.te-renderer]
+opt-level = 3
+
+[profile.dev.package.te-player]
+opt-level = 3
