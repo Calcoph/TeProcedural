@@ -3,12 +3,14 @@ use std::path::Path;
 use std::{collections::HashSet};
 
 use rand::seq::IteratorRandom;
+#[cfg(feature = "view3d")]
 use te_renderer::model::ModelVertex;
+#[cfg(feature = "view3d")]
 use te_renderer::state::GpuState;
+#[cfg(feature = "view3d")]
 use te_renderer::state::State as TeState;
 
 mod display;
-mod models;
 
 #[derive(Debug)]
 struct DecisionBranch<T>
@@ -65,13 +67,15 @@ where T: Tile
             rows.push(row)
         }
 
-        Board {
+        let board = Board {
             tiles: rows,
             decision_stack: vec![],
             dead_ends: vec![],
             width,
             height,
-        }
+        };
+
+        board
     }
 
     pub fn clean(&mut self) {
@@ -268,6 +272,7 @@ where T: Tile
         v
     }
 
+    #[cfg(feature = "view3d")]
     pub fn draw(&self, gpu: &GpuState, te_state: &mut TeState) {
         for (i, row) in self.tiles.iter().enumerate() {
             for (j, tile) in row.iter().enumerate() {
@@ -281,38 +286,18 @@ where T: Tile
         }
     }
 
+    #[cfg(feature = "view3d")]
     pub fn load_models(&self, gpu: &GpuState, te_state: &mut TeState) {
-        let name = String::from("water");
-        let model = get_model(gpu, te_state, name.clone(), models::SQUARE_V.into(), models::SQUARE_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
-
-        let name = String::from("ground");
-        let model = get_model(gpu, te_state, name.clone(), models::SQUARE_V.into(), models::SQUARE_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
-
-        let name = String::from("tree");
-        let model = get_model(gpu, te_state, name.clone(), models::TREE_V.into(), models::TREE_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
-
-        let name = String::from("house");
-        let model = get_model(gpu, te_state, name.clone(), models::HOUSE_V.into(), models::HOUSE_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
-
-        let name = String::from("road");
-        let model = get_model(gpu, te_state, name.clone(), models::SQUARE_V.into(), models::SQUARE_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
-
-        let name = String::from("hut");
-        let model = get_model(gpu, te_state, name.clone(), models::SQUARE_V.into(), models::SQUARE_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
-
-        let name = String::from("mountain");
-        let model = get_model(gpu, te_state, name.clone(), models::MOUNTAIN_V.into(), models::MOUNTAIN_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
-
-        let name = String::from("sand");
-        let model = get_model(gpu, te_state, name.clone(), models::SQUARE_V.into(), models::SQUARE_I.into());
-        te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));
+        for tile in T::all() {
+            match tile.get_model() {
+                Some((vertices, indices)) => {
+                    let name = tile.get_name();
+                    let model = get_model(gpu, te_state, name.clone(), vertices, indices);
+                    te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));            
+                },
+                None => (),
+            }
+        }
     }
 
     fn go_back(&mut self) -> Result<(), ImpossibleBoardError> {
@@ -378,6 +363,7 @@ where T: Tile
     }
 }
 
+#[cfg(feature = "view3d")]
 fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec<ModelVertex>, indices: Vec<u32>) -> te_renderer::model::Model {
     let image_path = Path::new("ignore").join("resources").join(format!("{name}.png"));
     let img = image::open(image_path).unwrap();
@@ -489,7 +475,10 @@ where T: Tile
 
 pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy{
     fn all() -> HashSet<Self>;
+    #[cfg(feature = "view3d")]
     fn get_name(&self) -> String;
+    #[cfg(feature = "view3d")]
+    fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
     fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Direction);
     fn get_rules(&self) -> Box<dyn Fn(&Self, Direction) -> bool + '_>;
 }

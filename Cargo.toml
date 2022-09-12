@@ -8,14 +8,18 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 colored = "2.0.0"
-pollster = "0.2.5"
-image = "0.24.3"
+pollster = { version = "0.2.5", optional = true }
+image = { version = "0.24.3", optional = true}
+te-renderer = { path = "../tile-engine/te-renderer", optional = true}
+te-player = { path = "../tile-engine/te-player", optional = true}
+te-gamepad = { path = "../tile-engine/te-gamepad", optional = true}
 
-[dependencies.te-renderer]
-path = "../tile-engine/te-renderer"
-
-[dependencies.te-player]
-path = "../tile-engine/te-player"
-
-[dependencies.te-gamepad]
-path = "../tile-engine/te-gamepad"
+[features]
+default = ["view3d"] #? Uncomment when debugging view3d only. so rust-analyzer takes it into account
+view3d = [
+    "dep:pollster",
+    "dep:image",
+    "dep:te-renderer",
+    "dep:te-player",
+    "dep:te-gamepad"
+]

@@ -5,11 +5,19 @@ use std::{rc::Rc, cell::RefCell};
 use colored::Colorize;
 
 use procedural::{Board, Direction, Tile};
+#[cfg(feature = "view3d")]
 use te_gamepad::gamepad::ControllerEvent;
+#[cfg(feature = "view3d")]
 use te_player::event_loop::{self, Event};
+#[cfg(feature = "view3d")]
 use te_renderer::{initial_config::InitialConfiguration, state::GpuState};
+#[cfg(feature = "view3d")]
 use te_renderer::state::State as TeState;
 
+#[cfg(feature = "view3d")]
+mod models;
+
+#[cfg(feature = "view3d")]
 fn main() {
     let (event_loop, gpu, window, te_state) = pollster::block_on(te_player::prepare(InitialConfiguration {
         resource_files_directory: String::from("ignore/resources"),
@@ -67,12 +75,18 @@ fn main() {
     event_loop::run(event_loop, window, gpu, te_state, event_handler);
 }
 
+#[cfg(not(feature = "view3d"))]
+fn main() {
+    todo!()
+}
+#[cfg(feature = "view3d")]
 struct State {
     board: Board<TileKind>,
     gpu: Rc<RefCell<GpuState>>,
     te_state: Rc<RefCell<TeState>>
 }
 
+#[cfg(feature = "view3d")]
 impl State {
     fn new(gpu: Rc<RefCell<GpuState>>, te_state: Rc<RefCell<TeState>>) -> State {
         let file = std::fs::read_to_string("size.txt").unwrap();
@@ -124,6 +138,7 @@ impl Tile for TileKind {
         set
     }
 
+    #[cfg(feature = "view3d")]
     fn get_name(&self) -> String {
         String::from(match self {
             TileKind::Water => "water",
@@ -207,6 +222,20 @@ impl Tile for TileKind {
                 TileKind::Sand => true,
                 _ => false
             }),
+        }
+    }
+
+    #[cfg(feature = "view3d")]
+    fn get_model(&self) -> Option<(Vec<te_renderer::model::ModelVertex>, Vec<u32>)> {
+        match self {
+            TileKind::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            TileKind::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            TileKind::Tree => Some((models::TREE_V.into(), models::TREE_I.into())),
+            TileKind::House(_) => Some((models::HOUSE_V.into(), models::HOUSE_I.into())),
+            TileKind::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            TileKind::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            TileKind::Mountain => Some((models::MOUNTAIN_V.into(), models::MOUNTAIN_I.into())),
+            TileKind::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
         }
     }
 }
