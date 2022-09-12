@@ -77,11 +77,32 @@ fn main() {
 
 #[cfg(not(feature = "view3d"))]
 fn main() {
-    todo!()
+    let file = std::fs::read_to_string("resources/size.txt").unwrap();
+    let mut file = file.split("\n");
+    let width = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
+    let height = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
+    println!("Initializing board");
+    let mut board: Board<ExampleTile> = Board::new(width, height);
+    println!("{}", board);
+    println!("Here is the first tile");
+    board.generate_1().unwrap();
+    println!("{}", board);
+    println!("Generating the entire board");
+    match board.generate() {
+        Ok(_) => {
+            println!("Board successfully generated");
+            println!("{}", board);
+        },
+        Err(_) => {
+            println!("It is (probably) impossible to make a board of this size with this set of rules");
+            println!("Here is a valid (but unfinished) board:");
+            println!("{}", board);
+        },
+    }
 }
 #[cfg(feature = "view3d")]
 struct State {
-    board: Board<TileKind>,
+    board: Board<ExampleTile>,
     gpu: Rc<RefCell<GpuState>>,
     te_state: Rc<RefCell<TeState>>
 }
@@ -109,7 +130,7 @@ impl State {
 
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-enum TileKind {
+enum ExampleTile {
     Water,
     Ground,
     Tree,
@@ -120,39 +141,39 @@ enum TileKind {
     Sand
 }
 
-impl Tile for TileKind {
+impl Tile for ExampleTile {
     fn all() -> HashSet<Self> {
         let mut set = HashSet::new();
 
-        set.insert(TileKind::Water);
-        set.insert(TileKind::Ground);
-        set.insert(TileKind::Tree);
-        set.insert(TileKind::House(Direction::North));
-        set.insert(TileKind::House(Direction::East));
-        set.insert(TileKind::House(Direction::South));
-        set.insert(TileKind::House(Direction::West));
-        set.insert(TileKind::Road);
-        set.insert(TileKind::Hut);
-        set.insert(TileKind::Mountain);
-        set.insert(TileKind::Sand);
+        set.insert(ExampleTile::Water);
+        set.insert(ExampleTile::Ground);
+        set.insert(ExampleTile::Tree);
+        set.insert(ExampleTile::House(Direction::North));
+        set.insert(ExampleTile::House(Direction::East));
+        set.insert(ExampleTile::House(Direction::South));
+        set.insert(ExampleTile::House(Direction::West));
+        set.insert(ExampleTile::Road);
+        set.insert(ExampleTile::Hut);
+        set.insert(ExampleTile::Mountain);
+        set.insert(ExampleTile::Sand);
         set
     }
 
     #[cfg(feature = "view3d")]
     fn get_name(&self) -> String {
         String::from(match self {
-            TileKind::Water => "water",
-            TileKind::Ground => "ground",
-            TileKind::Tree => "tree",
-            TileKind::House(_) => "house",
-            TileKind::Road => "road",
-            TileKind::Hut => "hut",
-            TileKind::Mountain => "mountain",
-            TileKind::Sand => "sand",
+            ExampleTile::Water => "water",
+            ExampleTile::Ground => "ground",
+            ExampleTile::Tree => "tree",
+            ExampleTile::House(_) => "house",
+            ExampleTile::Road => "road",
+            ExampleTile::Hut => "hut",
+            ExampleTile::Mountain => "mountain",
+            ExampleTile::Sand => "sand",
         }) 
     }
 
-    fn propagate(&self, possibilities: &mut HashSet<TileKind>, direction: Direction) {
+    fn propagate(&self, possibilities: &mut HashSet<ExampleTile>, direction: Direction) {
         let can_stay = self.get_rules();
         let mut to_remove = vec![];
         for possibility in possibilities.iter() {
@@ -165,61 +186,61 @@ impl Tile for TileKind {
         }
     }
 
-    fn get_rules(&self) -> Box<dyn Fn(&TileKind, Direction) -> bool + '_> {
+    fn get_rules(&self) -> Box<dyn Fn(&ExampleTile, Direction) -> bool + '_> {
         // Direction is this where "tile" is from "self"
         match self {
-            TileKind::Water => Box::new(|tile: &TileKind, _direction: Direction| match tile {
-                TileKind::Water => true,
-                TileKind::Sand => true,
+            ExampleTile::Water => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
+                ExampleTile::Water => true,
+                ExampleTile::Sand => true,
                 _ => false
             }),
-            TileKind::Ground => Box::new(|tile: &TileKind, direction: Direction| match tile {
-                TileKind::Water => false,
-                TileKind::House(dir) => direction.is_opposite(dir),
-                TileKind::Hut => false,
+            ExampleTile::Ground => Box::new(|tile: &ExampleTile, direction: Direction| match tile {
+                ExampleTile::Water => false,
+                ExampleTile::House(dir) => direction.is_opposite(dir),
+                ExampleTile::Hut => false,
                 _ => true
             }),
-            TileKind::Tree => Box::new(|tile: &TileKind, _direction: Direction| match tile {
-                TileKind::Ground => true,
-                TileKind::Tree => true,
-                TileKind::Hut => true,
-                TileKind::Mountain => true,
-                TileKind::Sand => true,
+            ExampleTile::Tree => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
+                ExampleTile::Ground => true,
+                ExampleTile::Tree => true,
+                ExampleTile::Hut => true,
+                ExampleTile::Mountain => true,
+                ExampleTile::Sand => true,
                 _ => false
             }),
-            TileKind::House(dir) => Box::new(|tile: &TileKind, direction: Direction| match tile {
-                TileKind::Ground => *dir != direction,
-                TileKind::House(dir2) => *dir != direction && !direction.is_opposite(dir2),
-                TileKind::Road => true,
-                TileKind::Mountain => (*dir).is_opposite(&direction),
+            ExampleTile::House(dir) => Box::new(|tile: &ExampleTile, direction: Direction| match tile {
+                ExampleTile::Ground => *dir != direction,
+                ExampleTile::House(dir2) => *dir != direction && !direction.is_opposite(dir2),
+                ExampleTile::Road => true,
+                ExampleTile::Mountain => (*dir).is_opposite(&direction),
                 _ => false
             }),
-            TileKind::Road => Box::new(|tile: &TileKind, _direction: Direction| match tile {
-                TileKind::Ground => true,
-                TileKind::House(_) => true,
-                TileKind::Road => true,
-                TileKind::Sand => true,
+            ExampleTile::Road => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
+                ExampleTile::Ground => true,
+                ExampleTile::House(_) => true,
+                ExampleTile::Road => true,
+                ExampleTile::Sand => true,
                 _ => false
             }),
-            TileKind::Hut => Box::new(|tile: &TileKind, _direction: Direction| match tile {
-                TileKind::Tree => true,
-                TileKind::Mountain => true,
+            ExampleTile::Hut => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
+                ExampleTile::Tree => true,
+                ExampleTile::Mountain => true,
                 _ => false
             }),
-            TileKind::Mountain => Box::new(|tile: &TileKind, direction: Direction| match tile {
-                TileKind::Ground => true,
-                TileKind::Tree => true,
-                TileKind::House(dir) => *dir == direction,
-                TileKind::Hut => true,
-                TileKind::Mountain => true,
+            ExampleTile::Mountain => Box::new(|tile: &ExampleTile, direction: Direction| match tile {
+                ExampleTile::Ground => true,
+                ExampleTile::Tree => true,
+                ExampleTile::House(dir) => *dir == direction,
+                ExampleTile::Hut => true,
+                ExampleTile::Mountain => true,
                 _ => false
             }),
-            TileKind::Sand => Box::new(|tile: &TileKind, _direction: Direction| match tile {
-                TileKind::Water => true,
-                TileKind::Ground => true,
-                TileKind::Tree => true,
-                TileKind::Road => true,
-                TileKind::Sand => true,
+            ExampleTile::Sand => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
+                ExampleTile::Water => true,
+                ExampleTile::Ground => true,
+                ExampleTile::Tree => true,
+                ExampleTile::Road => true,
+                ExampleTile::Sand => true,
                 _ => false
             }),
         }
@@ -228,34 +249,34 @@ impl Tile for TileKind {
     #[cfg(feature = "view3d")]
     fn get_model(&self) -> Option<(Vec<te_renderer::model::ModelVertex>, Vec<u32>)> {
         match self {
-            TileKind::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            TileKind::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            TileKind::Tree => Some((models::TREE_V.into(), models::TREE_I.into())),
-            TileKind::House(_) => Some((models::HOUSE_V.into(), models::HOUSE_I.into())),
-            TileKind::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            TileKind::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            TileKind::Mountain => Some((models::MOUNTAIN_V.into(), models::MOUNTAIN_I.into())),
-            TileKind::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Tree => Some((models::TREE_V.into(), models::TREE_I.into())),
+            ExampleTile::House(_) => Some((models::HOUSE_V.into(), models::HOUSE_I.into())),
+            ExampleTile::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Mountain => Some((models::MOUNTAIN_V.into(), models::MOUNTAIN_I.into())),
+            ExampleTile::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
         }
     }
 }
 
-impl Display for TileKind {
+impl Display for ExampleTile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let character = match self {
-            TileKind::Water => "~".blue(),
-            TileKind::Ground => "O".bold().on_green(),
-            TileKind::Tree => "B".green(),
-            TileKind::House(dir) => match dir {
+            ExampleTile::Water => "~".blue(),
+            ExampleTile::Ground => "O".bold().on_green(),
+            ExampleTile::Tree => "B".green(),
+            ExampleTile::House(dir) => match dir {
                 Direction::North => "#".magenta().on_blue(),
                 Direction::East => "#".magenta().on_green(),
                 Direction::South => "#".magenta(),
                 Direction::West => "#".magenta().on_yellow(),
             },
-            TileKind::Road => "-".purple(),
-            TileKind::Hut => "v".red(),
-            TileKind::Mountain => "X".on_red(),
-            TileKind::Sand => "~".yellow(),
+            ExampleTile::Road => "-".purple(),
+            ExampleTile::Hut => "v".red(),
+            ExampleTile::Mountain => "X".on_red(),
+            ExampleTile::Sand => "~".yellow(),
         };
         write!(f, "{}", character)
     }

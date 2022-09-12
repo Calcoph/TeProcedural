@@ -47,7 +47,7 @@ pub struct ImpossibleBoardError;
 pub struct Board<T>
 where T: Tile
 {
-    tiles: Vec<Vec<MaybeTile<T>>>,
+    pub tiles: Vec<Vec<MaybeTile<T>>>,
     decision_stack: Vec<DecisionBranch<T>>, // TODO: generate the decision tree
     dead_ends: Vec<(usize, usize)>,
     width: u32,
@@ -466,7 +466,7 @@ impl Direction {
 }
 
 #[derive(Debug)]
-enum MaybeTile<T>
+pub enum MaybeTile<T>
 where T: Tile
 {
     Undecided(HashSet<T>),
