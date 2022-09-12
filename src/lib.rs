@@ -1,6 +1,7 @@
 use std::hash::Hash;
-use std::path::Path;
 use std::{collections::HashSet};
+#[cfg(feature = "view3d")]
+use std::path::Path;
 
 use rand::seq::IteratorRandom;
 #[cfg(feature = "view3d")]
@@ -479,6 +480,17 @@ pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy{
     fn get_name(&self) -> String;
     #[cfg(feature = "view3d")]
     fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
-    fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Direction);
+    fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Direction) {
+        let can_stay = self.get_rules();
+        let mut to_remove = vec![];
+        for possibility in possibilities.iter() {
+            if !can_stay(possibility, direction) {
+                to_remove.push(*possibility);
+            }
+        }
+        for rem in to_remove {
+            possibilities.remove(&rem);
+        }
+    }
     fn get_rules(&self) -> Box<dyn Fn(&Self, Direction) -> bool + '_>;
 }

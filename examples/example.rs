@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fmt::Display;
+#[cfg(feature = "view3d")]
 use std::{rc::Rc, cell::RefCell};
 
 use colored::Colorize;
@@ -26,6 +27,7 @@ fn main() {
         default_texture_path: String::from("ignore"),
         icon_path: String::from("resources/icon.png"),
         camera_sensitivity: 2.0,
+        window_name: String::from("procedural"),
         ..Default::default()
     }, false)).unwrap();
 
@@ -173,33 +175,23 @@ impl Tile for ExampleTile {
         }) 
     }
 
-    fn propagate(&self, possibilities: &mut HashSet<ExampleTile>, direction: Direction) {
-        let can_stay = self.get_rules();
-        let mut to_remove = vec![];
-        for possibility in possibilities.iter() {
-            if !can_stay(possibility, direction) {
-                to_remove.push(*possibility);
-            }
-        }
-        for rem in to_remove {
-            possibilities.remove(&rem);
-        }
-    }
-
     fn get_rules(&self) -> Box<dyn Fn(&ExampleTile, Direction) -> bool + '_> {
-        // Direction is this where "tile" is from "self"
+        // Direction is where "tile" is from "self"
         match self {
+            // Water can only be next to water or sand
             ExampleTile::Water => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
                 ExampleTile::Water => true,
                 ExampleTile::Sand => true,
                 _ => false
             }),
+            // Ground can be next to anything, except: in front of a house, water, hut.
             ExampleTile::Ground => Box::new(|tile: &ExampleTile, direction: Direction| match tile {
                 ExampleTile::Water => false,
                 ExampleTile::House(dir) => direction.is_opposite(dir),
                 ExampleTile::Hut => false,
                 _ => true
             }),
+            // Trees can only be next to ground, trees, huts, mountains and sand
             ExampleTile::Tree => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
                 ExampleTile::Ground => true,
                 ExampleTile::Tree => true,
@@ -208,6 +200,7 @@ impl Tile for ExampleTile {
                 ExampleTile::Sand => true,
                 _ => false
             }),
+            // Only roads are allowed to be in front of houses. They can have houses or ground or more roads around them. They can also have mountains behind them
             ExampleTile::House(dir) => Box::new(|tile: &ExampleTile, direction: Direction| match tile {
                 ExampleTile::Ground => *dir != direction,
                 ExampleTile::House(dir2) => *dir != direction && !direction.is_opposite(dir2),
@@ -215,6 +208,7 @@ impl Tile for ExampleTile {
                 ExampleTile::Mountain => (*dir).is_opposite(&direction),
                 _ => false
             }),
+            // Roads can be next to ground, houses, roads and sand
             ExampleTile::Road => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
                 ExampleTile::Ground => true,
                 ExampleTile::House(_) => true,
@@ -222,11 +216,13 @@ impl Tile for ExampleTile {
                 ExampleTile::Sand => true,
                 _ => false
             }),
+            // Huts can only be next to trees and mountains
             ExampleTile::Hut => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
                 ExampleTile::Tree => true,
                 ExampleTile::Mountain => true,
                 _ => false
             }),
+            // Mountains can be next to ground, trees, huts and mountains. They can also be behind houses.
             ExampleTile::Mountain => Box::new(|tile: &ExampleTile, direction: Direction| match tile {
                 ExampleTile::Ground => true,
                 ExampleTile::Tree => true,
@@ -235,6 +231,7 @@ impl Tile for ExampleTile {
                 ExampleTile::Mountain => true,
                 _ => false
             }),
+            // Sand can be next to water, ground, trees, roads and sand
             ExampleTile::Sand => Box::new(|tile: &ExampleTile, _direction: Direction| match tile {
                 ExampleTile::Water => true,
                 ExampleTile::Ground => true,
