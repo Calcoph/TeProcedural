@@ -20,11 +20,11 @@ mod models;
 #[cfg(feature = "view3d")]
 fn main() {
     let (event_loop, gpu, window, te_state) = pollster::block_on(te_player::prepare(InitialConfiguration {
-        resource_files_directory: String::from("ignore/resources"),
+        resource_files_directory: String::from("ignore"),
         map_files_directory: String::from("ignore"),
         font_dir_path: String::from("ignore"),
         default_texture_path: String::from("ignore"),
-        icon_path: String::from("icon.png"),
+        icon_path: String::from("resources/icon.png"),
         camera_sensitivity: 2.0,
         ..Default::default()
     }, false)).unwrap();
@@ -89,7 +89,7 @@ struct State {
 #[cfg(feature = "view3d")]
 impl State {
     fn new(gpu: Rc<RefCell<GpuState>>, te_state: Rc<RefCell<TeState>>) -> State {
-        let file = std::fs::read_to_string("size.txt").unwrap();
+        let file = std::fs::read_to_string("resources/size.txt").unwrap();
         let mut file = file.split("\n");
         let width = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
         let height = u32::from_str_radix(file.next().unwrap(), 10).unwrap();

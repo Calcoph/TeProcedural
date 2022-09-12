@@ -365,7 +365,7 @@ where T: Tile
 
 #[cfg(feature = "view3d")]
 fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec<ModelVertex>, indices: Vec<u32>) -> te_renderer::model::Model {
-    let image_path = Path::new("ignore").join("resources").join(format!("{name}.png"));
+    let image_path = Path::new("resources").join("tiles").join(format!("{name}.png"));
     let img = image::open(image_path).unwrap();
     let img = img.as_rgba8().unwrap();
     let texture = te_renderer::texture::Texture::from_dyn_image(
