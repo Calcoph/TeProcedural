@@ -15,7 +15,8 @@ mod display;
 
 #[derive(Debug)]
 struct DecisionBranch<T>
-where T: Tile
+where
+    T: Tile
 {
     deciding_coord: (usize, usize),
     tried_tiles: HashSet<T>,
@@ -24,7 +25,8 @@ where T: Tile
 }
 
 impl<T> DecisionBranch<T>
-where T: Tile
+where
+    T: Tile
 {
     fn new(row: usize, col: usize) -> DecisionBranch<T> {
         DecisionBranch {
@@ -46,7 +48,8 @@ pub enum BranchStatus {
 pub struct ImpossibleBoardError;
 
 pub struct Board<T>
-where T: Tile
+where
+    T: Tile
 {
     pub tiles: Vec<Vec<MaybeTile<T>>>,
     decision_stack: Vec<DecisionBranch<T>>, // TODO: generate the decision tree
@@ -56,7 +59,8 @@ where T: Tile
 }
 
 impl<T> Board<T>
-where T: Tile
+where
+    T: Tile
 {
     pub fn new(width: u32, height: u32) -> Board<T> {
         let mut rows = vec![];
@@ -149,11 +153,6 @@ where T: Tile
     }
 
     pub fn get_status(&self) -> BranchStatus {
-        // Cuando he ganado? Cuando no quedan undecideds
-        // Cuando hay que volver atrás?
-        // .* Hay algún possibilities == 0
-        // .* Los que tienen possibilities > 0 son dead_ends
-        // Y el actual ya ha agotado sus posibilidades
         let undecideds_left = self.tiles.iter().any(|v| v.iter().any(|t| match t {
             MaybeTile::Undecided(_) => true,
             MaybeTile::Decided(_) => false,
@@ -246,8 +245,8 @@ where T: Tile
 
     fn propagate(&mut self, tile: T, row: usize, col: usize) -> Vec<(usize, usize)>{
         let mut v = vec![];
-        let mut prop_dir = |direction, v: &mut Vec<(usize, usize)>| {
-            match (row, col).neighbour(direction, self.width, self.height) {
+        let mut prop_dir = |direction: T::Direction, v: &mut Vec<(usize, usize)>| {
+            match direction.neighbour(row, col, self.width, self.height) {
                 Ok((row, col)) => {
                     match &mut self.tiles[row][col] {
                         MaybeTile::Undecided(possibilities) => {
@@ -266,10 +265,9 @@ where T: Tile
             }
         };
 
-        prop_dir(Direction::North, &mut v);
-        prop_dir(Direction::East, &mut v);
-        prop_dir(Direction::South, &mut v);
-        prop_dir(Direction::West, &mut v);
+        for direction in Direction::all() {
+            prop_dir(direction, &mut v);
+        }
         v
     }
 
@@ -336,8 +334,8 @@ where T: Tile
     }
 
     fn recalculate(&mut self, row: usize, col: usize) {
-        let mut recalc = |direction| {
-            match (row, col).neighbour(direction, self.width, self.height) {
+        let mut recalc = |direction: T::Direction| {
+            match direction.neighbour(row, col, self.width, self.height) {
                 Ok((row_t, col_t)) => {
                     match self.tiles[row_t][col_t] {
                         MaybeTile::Undecided(_) => (),
@@ -356,11 +354,9 @@ where T: Tile
                 Err(_) => ()
             }
         };
-
-        recalc(Direction::North);
-        recalc(Direction::East);
-        recalc(Direction::South);
-        recalc(Direction::West);
+        for direction in Direction::all() {
+            recalc(direction);
+        }
     }
 }
 
@@ -394,93 +390,32 @@ fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec
     te_renderer::model::Model{ meshes, transparent_meshes: vec![], materials }
 }
 
-struct CoordError;
+pub struct CoordError;
 
-trait Coord: Sized{
-    fn neighbour(&self, direction: Direction, width: u32, height: u32) -> Result<Self, CoordError>;
-}
-
-// 0, 0 is top-left
-// 00 01
-// 10 11
-impl Coord for (usize, usize) {
-    fn neighbour(&self, direction: Direction, width: u32, height: u32) -> Result<Self, CoordError> {
-        match direction {
-            Direction::North => match self.0 {
-                0 => Err(CoordError),
-                _ => Ok((self.0-1, self.1))
-            },
-            Direction::East => match self.1 {
-                x if x+1 >= width as usize => Err(CoordError),
-                _ => Ok((self.0, self.1+1))
-            },
-            Direction::South => match self.0 {
-                y if y+1 >= height as usize => Err(CoordError),
-                _ => Ok((self.0+1, self.1))
-            },
-            Direction::West => match self.1 {
-                0 => Err(CoordError),
-                _ => Ok((self.0, self.1-1))
-            },
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum Direction {
-    North,
-    East,
-    South,
-    West
-}
-
-impl Direction {
-    pub fn is_opposite(&self, dir: &Direction) -> bool {
-        match self {
-            Direction::North => match dir {
-                Direction::South => true,
-                _ => false
-            },
-            Direction::East => match dir {
-                Direction::West => true,
-                _ => false
-            },
-            Direction::South => match dir {
-                Direction::North => true,
-                _ => false
-            },
-            Direction::West => match dir {
-                Direction::East => true,
-                _ => false
-            },
-        }
-    }
-
-    pub fn opposite(&self) -> Direction {
-        match self {
-            Direction::North => Direction::South,
-            Direction::East => Direction::West,
-            Direction::South => Direction::North,
-            Direction::West => Direction::East,
-        }
-    }
+pub trait Direction: Sized + Copy {
+    fn all() -> Vec<Self>;
+    fn neighbour(&self, row: usize, col: usize, width: u32, height: u32) -> Result<(usize, usize), CoordError>;
+    fn opposite(&self) -> Self;
 }
 
 #[derive(Debug)]
 pub enum MaybeTile<T>
-where T: Tile
+where
+    T: Tile,
 {
     Undecided(HashSet<T>),
-    Decided(T)
+    Decided(T),
 }
 
-pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy{
+pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy {
+    type Direction: Direction;
+
     fn all() -> HashSet<Self>;
     #[cfg(feature = "view3d")]
     fn get_name(&self) -> String;
     #[cfg(feature = "view3d")]
     fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
-    fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Direction) {
+    fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Self::Direction) {
         let can_stay = self.get_rules();
         let mut to_remove = vec![];
         for possibility in possibilities.iter() {
@@ -492,5 +427,5 @@ pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy{
             possibilities.remove(&rem);
         }
     }
-    fn get_rules(&self) -> Box<dyn Fn(&Self, Direction) -> bool + '_>;
+    fn get_rules(&self) -> Box<dyn Fn(&Self, Self::Direction) -> bool + '_>;
 }
