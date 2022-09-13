@@ -91,3 +91,6 @@ If even small boards are slow/infinite to generate, check that no rules confilct
 * 3D model doesn't render correctly
 
 Tengine doesn't have lighting at all. It also culls triangles that are facing away from the camera. So if some (or all) triangles of the model are invisible, change the order of the indices.
+
+* te_player::prepare() returns Error
+Make sure you have an icon and InitialConfiguration.icon_path points to it. InitialConfiguration.font_dir_path must also be a valid path. See the [example](/examples/example.rs).

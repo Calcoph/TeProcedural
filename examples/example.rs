@@ -21,17 +21,34 @@ mod models;
 #[cfg(feature = "view3d")]
 fn main() {
     let (event_loop, gpu, window, te_state) = pollster::block_on(te_player::prepare(InitialConfiguration {
-        resource_files_directory: String::from("ignore"),
-        map_files_directory: String::from("ignore"),
-        font_dir_path: String::from("ignore"),
-        default_texture_path: String::from("ignore"),
+        font_dir_path: String::from("resources/font"),
         icon_path: String::from("resources/icon.png"),
         camera_sensitivity: 2.0,
         window_name: String::from("procedural"),
+        screen_height: 500,
+        screen_width: 1000,
         ..Default::default()
     }, false)).unwrap();
 
     let mut state = State::new(gpu.clone(), te_state.clone());
+    state.te_state.borrow_mut().instances.place_sprite("white.png", &state.gpu.borrow(), Some((265.0, 100.0)), (1.0, 1.0, 0.0));
+    let text = "Move with WASD
+Move up/down with spacebar/shift
+Pan with Q/E
+Look up/down with Z/X
+Zoom in/out with R/F
+Generate a new map with U";
+    let lines = text.split("\n")
+        .map(|s| s.chars().map(|c| match c {
+            'A'..='Z' => c.to_lowercase().to_string() + "+",
+            'a'..='z' => c.to_string() + "+",
+            ' ' => String::from("space"),
+            '/' => String::from("slash"),
+            _ => unimplemented!()
+        }).collect()).enumerate();
+    for (height, line) in lines {
+        state.te_state.borrow_mut().instances.place_text(line, &gpu.borrow(), None, (5.0, 15.0*height as f32+5.0, 1.0));
+    }
     match state.board.generate() {
         Ok(_) => {
             state.draw_board();
@@ -41,7 +58,6 @@ fn main() {
     state.board.clean();
     let event_handler = move |event: Event<ControllerEvent>| {
         match event {
-            te_player::event_loop::Event::NewEvents(_) => (),
             te_player::event_loop::Event::WindowEvent { event, .. } => {
                 state.te_state.borrow_mut().input(&event);
                 match event {
@@ -63,14 +79,7 @@ fn main() {
                     _ => ()
                 }
             },
-            te_player::event_loop::Event::DeviceEvent { .. } => (),
-            te_player::event_loop::Event::UserEvent(_) => (),
-            te_player::event_loop::Event::Suspended => (),
-            te_player::event_loop::Event::Resumed => (),
-            te_player::event_loop::Event::MainEventsCleared => (),
-            te_player::event_loop::Event::RedrawRequested(_) => (),
-            te_player::event_loop::Event::RedrawEventsCleared => (),
-            te_player::event_loop::Event::LoopDestroyed => (),
+            _ => ()
         }
     };
     let event_handler = Box::new(event_handler);
@@ -124,7 +133,7 @@ impl State {
     }
 
     fn draw_board(&mut self) {
-        self.te_state.borrow_mut().instances.forget_all_instances();
+        self.te_state.borrow_mut().instances.forget_all_3d_instances();
         self.board.load_models(&self.gpu.borrow(), &mut self.te_state.borrow_mut());
         self.board.draw(&self.gpu.borrow(), &mut self.te_state.borrow_mut());
     }
