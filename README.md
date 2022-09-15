@@ -31,7 +31,11 @@ procedural = { git = TODO}
         ...
     }
     ```
- 3. Make sure that rules are bidirectional. The code below is wrong:
+ 3. Make sure that rules are bidirectional.
+
+    Enable the feature "validate" and run your code to see which rules are not. Validation will happen in Board::new(). It is recommended to disable this feature when you make no changes to your Tile/Direction, since the results won't change and the performance of the validation is O(n²*m) where n is the amount of tiles and m the amount of directions.
+
+    The code below is wrong:
     ```rust
     fn get_rules(&self) -> Box<dyn Fn(&MyTile, Direction) -> bool + '_> {
         match self {
@@ -51,6 +55,7 @@ procedural = { git = TODO}
         }
     }
     ```
+
  4. Generate a board
     ```rust
     use procedural::Board;
@@ -69,7 +74,7 @@ Models must have a 1.0x1.0 square footprint in order for them to be displayed pr
 
 The model is formed by 3 parts. The texture, the vertices and the indices.
  
-Each tile (that has a model) **must** have a distinct name, this name is also used to get the texture for the model. So if a tile's name is `"house"`, its texture will be at `resources/tiles/house.png`.
+Each tile (that has a model) **must** have a distinct name (unless 2 tiles share the same model), this name is also used to get the texture for the model. So if a tile's name is `"house"`, its texture will be at `resources/tiles/house.png`.
 
 Vertices have 2 parts: the 3D position and the coords of the texture (from 0.0 to 1.0) at that point.
 
