@@ -19,7 +19,7 @@ where
     T: Display + Tile
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.tiles {
+        for row in &self.tiles[0] {
             for col in row {
                 write!(f, "{}", col)?
             }

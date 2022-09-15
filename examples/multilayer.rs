@@ -1,4 +1,4 @@
-use std::collections::{HashSet, hash_set};
+use std::collections::{HashSet};
 use std::fmt::Display;
 #[cfg(feature = "view3d")]
 use std::{rc::Rc, cell::RefCell};
@@ -20,6 +20,8 @@ mod models;
 
 #[cfg(feature = "view3d")]
 fn main() {
+    use procedural::MaybeTile;
+
     let (event_loop, gpu, window, te_state) = pollster::block_on(te_player::prepare(InitialConfiguration {
         font_dir_path: String::from("resources/font"),
         icon_path: String::from("resources/icon.png"),
@@ -148,34 +150,41 @@ enum ExampleTile {
     Water,
     Ground,
     Tree,
-    House(Direction4),
+    House(Direction6), // Direction is the side of the door (where there must be a road)
     Road,
     Hut,
-    Mountain,
+    Mountain(Direction6), // Direction is the position of mountain relative to its Mountain(Down)
     Sand,
     Air
 }
 
 impl Tile for ExampleTile {
-    type Direction = Direction4;
+    type Direction = Direction6;
 
     fn possibles(layer: usize) -> HashSet<Self> {
         let mut set = HashSet::new();
         match layer {
-            0 => { // this tileset is meant only for 1 layer
+            0 => {
                 set.insert(ExampleTile::Water);
                 set.insert(ExampleTile::Ground);
                 set.insert(ExampleTile::Tree);
-                set.insert(ExampleTile::House(Direction4::North));
-                set.insert(ExampleTile::House(Direction4::East));
-                set.insert(ExampleTile::House(Direction4::South));
-                set.insert(ExampleTile::House(Direction4::West));
+                set.insert(ExampleTile::House(Direction6::North));
+                set.insert(ExampleTile::House(Direction6::East));
+                set.insert(ExampleTile::House(Direction6::South));
+                set.insert(ExampleTile::House(Direction6::West));
                 set.insert(ExampleTile::Road);
                 set.insert(ExampleTile::Hut);
-                set.insert(ExampleTile::Mountain);
+                set.insert(ExampleTile::Mountain(Direction6::North));
+                set.insert(ExampleTile::Mountain(Direction6::East));
+                set.insert(ExampleTile::Mountain(Direction6::South));
+                set.insert(ExampleTile::Mountain(Direction6::West));
+                set.insert(ExampleTile::Mountain(Direction6::Down));
                 set.insert(ExampleTile::Sand);
             }
-            _ => {set.insert(ExampleTile::Air);} // In case someone asks for more than 1 layer, this will prevent it from crashing
+            _ => {
+                set.insert(ExampleTile::Mountain(Direction6::Up));
+                set.insert(ExampleTile::Air);
+            } // In case someone asks for more than 1 layer, this will prevent it from crashing
         }
         set
     }
@@ -189,50 +198,66 @@ impl Tile for ExampleTile {
             ExampleTile::House(_) => "house",
             ExampleTile::Road => "road",
             ExampleTile::Hut => "hut",
-            ExampleTile::Mountain => "mountain",
+            ExampleTile::Mountain(dir) => match dir {
+                Direction6::North => "mountainN",
+                Direction6::East => "mountainE",
+                Direction6::South => "mountainS",
+                Direction6::West => "mountainW",
+                Direction6::Up => "mountain-top",
+                Direction6::Down => "mountain-base",
+            },
             ExampleTile::Sand => "sand",
             ExampleTile::Air => "air",
         }) 
     }
 
-    fn get_rules(&self) -> Box<dyn Fn(&ExampleTile, Direction4) -> bool + '_> {
+    fn get_rules(&self) -> Box<dyn Fn(&ExampleTile, Direction6) -> bool + '_> {
         // Direction is where "tile" is from "self"
         match self {
             // Water can only be next to water or sand
-            ExampleTile::Water => Box::new(|tile: &ExampleTile, _direction: Direction4| match tile {
+            ExampleTile::Water => Box::new(|tile: &ExampleTile, _direction: Direction6| match tile {
                 ExampleTile::Water => true,
                 ExampleTile::Sand => true,
                 ExampleTile::Air => true,
                 _ => false
             }),
             // Ground can be next to anything, except: in front of a house, water, hut.
-            ExampleTile::Ground => Box::new(|tile: &ExampleTile, direction: Direction4| match tile {
+            ExampleTile::Ground => Box::new(|tile: &ExampleTile, direction: Direction6| match tile {
                 ExampleTile::Water => false,
                 ExampleTile::House(dir) => direction != dir.opposite(),
                 ExampleTile::Hut => false,
+                ExampleTile::Mountain(dir) => match dir {
+                    Direction6::Up => false,
+                    Direction6::Down => false,
+                    _ => *dir != direction
+                },
                 _ => true
             }),
             // Trees can only be next to ground, trees, huts, mountains and sand
-            ExampleTile::Tree => Box::new(|tile: &ExampleTile, _direction: Direction4| match tile {
+            ExampleTile::Tree => Box::new(|tile: &ExampleTile, direction: Direction6| match tile {
                 ExampleTile::Ground => true,
                 ExampleTile::Tree => true,
                 ExampleTile::Hut => true,
-                ExampleTile::Mountain => true,
+                ExampleTile::Mountain(dir) => match dir {
+                    Direction6::Up => false,
+                    Direction6::Down => false,
+                    _ => *dir != direction
+                },
                 ExampleTile::Sand => true,
                 ExampleTile::Air => true,
                 _ => false
             }),
             // Only roads are allowed to be in front of houses. They can have houses or ground or more roads around them. They can also have mountains behind them
-            ExampleTile::House(dir) => Box::new(|tile: &ExampleTile, direction: Direction4| match tile {
+            ExampleTile::House(dir) => Box::new(|tile: &ExampleTile, direction: Direction6| match tile {
                 ExampleTile::Ground => *dir != direction,
                 ExampleTile::House(dir2) => *dir != direction && !direction.is_opposite(dir2),
                 ExampleTile::Road => true,
-                ExampleTile::Mountain => (*dir).is_opposite(&direction),
+                ExampleTile::Mountain(dir2) => (*dir).is_opposite(&direction) && *dir2 != Direction6::Up && *dir2 != Direction6::Down && *dir2 != direction,
                 ExampleTile::Air => true,
                 _ => false
             }),
             // Roads can be next to ground, houses, roads and sand
-            ExampleTile::Road => Box::new(|tile: &ExampleTile, _direction: Direction4| match tile {
+            ExampleTile::Road => Box::new(|tile: &ExampleTile, _direction: Direction6| match tile {
                 ExampleTile::Ground => true,
                 ExampleTile::House(_) => true,
                 ExampleTile::Road => true,
@@ -241,24 +266,48 @@ impl Tile for ExampleTile {
                 _ => false
             }),
             // Huts can only be next to trees and mountains
-            ExampleTile::Hut => Box::new(|tile: &ExampleTile, _direction: Direction4| match tile {
+            ExampleTile::Hut => Box::new(|tile: &ExampleTile, direction: Direction6| match tile {
                 ExampleTile::Tree => true,
-                ExampleTile::Mountain => true,
+                ExampleTile::Mountain(dir) => match dir {
+                    Direction6::Up => false,
+                    Direction6::Down => false,
+                    _ => *dir != direction
+                },
                 ExampleTile::Air => true,
                 _ => false
             }),
             // Mountains can be next to ground, trees, huts and mountains. They can also be behind houses.
-            ExampleTile::Mountain => Box::new(|tile: &ExampleTile, direction: Direction4| match tile {
-                ExampleTile::Ground => true,
-                ExampleTile::Tree => true,
-                ExampleTile::House(dir) => *dir == direction,
-                ExampleTile::Hut => true,
-                ExampleTile::Mountain => true,
-                ExampleTile::Air => true,
-                _ => false
+            ExampleTile::Mountain(dir) => Box::new(|tile: &ExampleTile, direction: Direction6| match *dir {
+                Direction6::Up => match tile {
+                    ExampleTile::Mountain(dir2) => match dir2 {
+                        Direction6::Down => direction == Direction6::Down,
+                        _ => false
+                    },
+                    ExampleTile::Air => true,
+                    _ => false
+                },
+                Direction6::Down => match tile {
+                    ExampleTile::Mountain(dir2) => match dir2 {
+                        Direction6::Down => false,
+                        d => direction == *d,
+                    },
+                    _ => false,
+                },
+                _ => match tile {
+                    ExampleTile::Ground => *dir != direction.opposite(),
+                    ExampleTile::Tree => *dir != direction.opposite(),
+                    ExampleTile::House(dir2) => *dir2 == direction && *dir != direction.opposite(),
+                    ExampleTile::Hut => *dir != direction.opposite(),
+                    ExampleTile::Mountain(dir2) => match dir2 {
+                        Direction6::Down => direction.opposite() == *dir,
+                        _ => false,
+                    },
+                    ExampleTile::Air => true,
+                    _ => false
+                }
             }),
             // Sand can be next to water, ground, trees, roads and sand
-            ExampleTile::Sand => Box::new(|tile: &ExampleTile, _direction: Direction4| match tile {
+            ExampleTile::Sand => Box::new(|tile: &ExampleTile, _direction: Direction6| match tile {
                 ExampleTile::Water => true,
                 ExampleTile::Ground => true,
                 ExampleTile::Tree => true,
@@ -268,7 +317,11 @@ impl Tile for ExampleTile {
                 _ => false
             }),
             // Air can be anywhere (except first layer, which is done in Tile::possibles)
-            ExampleTile::Air => Box::new(|tile: &ExampleTile, _direction: Direction4| match tile {
+            ExampleTile::Air => Box::new(|tile: &ExampleTile, _direction: Direction6| match tile {
+                ExampleTile::Mountain(dir) => match dir {
+                    Direction6::Down => false,
+                    _ => true
+                },
                 _ => true
             }),
         }
@@ -283,7 +336,14 @@ impl Tile for ExampleTile {
             ExampleTile::House(_) => Some((models::HOUSE_V.into(), models::HOUSE_I.into())),
             ExampleTile::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
             ExampleTile::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Mountain => Some((models::MOUNTAIN_V.into(), models::MOUNTAIN_I.into())),
+            ExampleTile::Mountain(dir) => match dir {
+                Direction6::North => Some((models::MOUNTAIN_N_V.into(), models::MOUNTAIN_N_I.into())),
+                Direction6::East => Some((models::MOUNTAIN_E_V.into(), models::MOUNTAIN_E_I.into())),
+                Direction6::South => Some((models::MOUNTAIN_S_V.into(), models::MOUNTAIN_S_I.into())),
+                Direction6::West => Some((models::MOUNTAIN_W_V.into(), models::MOUNTAIN_W_I.into())),
+                Direction6::Up => Some((models::MOUNTAIN_U_V.into(), models::MOUNTAIN_U_I.into())),
+                Direction6::Down => Some((models::MOUNTAIN_D_V.into(), models::MOUNTAIN_D_I.into())),
+            },
             ExampleTile::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
             ExampleTile::Air => None, // Air is invisible
         }
@@ -295,13 +355,18 @@ impl Tile for ExampleTile {
         set.insert(ExampleTile::Water);
         set.insert(ExampleTile::Ground);
         set.insert(ExampleTile::Tree);
-        set.insert(ExampleTile::House(Direction4::North));
-        set.insert(ExampleTile::House(Direction4::East));
-        set.insert(ExampleTile::House(Direction4::South));
-        set.insert(ExampleTile::House(Direction4::West));
+        set.insert(ExampleTile::House(Direction6::North));
+        set.insert(ExampleTile::House(Direction6::East));
+        set.insert(ExampleTile::House(Direction6::South));
+        set.insert(ExampleTile::House(Direction6::West));
         set.insert(ExampleTile::Road);
         set.insert(ExampleTile::Hut);
-        set.insert(ExampleTile::Mountain);
+        set.insert(ExampleTile::Mountain(Direction6::North));
+        set.insert(ExampleTile::Mountain(Direction6::East));
+        set.insert(ExampleTile::Mountain(Direction6::South));
+        set.insert(ExampleTile::Mountain(Direction6::West));
+        set.insert(ExampleTile::Mountain(Direction6::Up));
+        set.insert(ExampleTile::Mountain(Direction6::Down));
         set.insert(ExampleTile::Sand);
         set.insert(ExampleTile::Air);
         set
@@ -322,14 +387,16 @@ impl Display for ExampleTile {
             ExampleTile::Ground => "O".bold().on_green(),
             ExampleTile::Tree => "B".green(),
             ExampleTile::House(dir) => match dir {
-                Direction4::North => "#".magenta().on_blue(),
-                Direction4::East => "#".magenta().on_green(),
-                Direction4::South => "#".magenta(),
-                Direction4::West => "#".magenta().on_yellow(),
+                Direction6::North => "#".magenta().on_blue(),
+                Direction6::East => "#".magenta().on_green(),
+                Direction6::South => "#".magenta(),
+                Direction6::West => "#".magenta().on_yellow(),
+                Direction6::Up => unreachable!(),
+                Direction6::Down => unreachable!(),
             },
             ExampleTile::Road => "-".purple(),
             ExampleTile::Hut => "v".red(),
-            ExampleTile::Mountain => "X".on_red(),
+            ExampleTile::Mountain(_) => "X".on_red(),
             ExampleTile::Sand => "~".yellow(),
             ExampleTile::Air => " ".into(),
         };
@@ -338,68 +405,95 @@ impl Display for ExampleTile {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum Direction4 {
+pub enum Direction6 {
     North,
     East,
     South,
-    West
+    West,
+    Up,
+    Down
 }
 
-impl Direction4 {
-    pub fn is_opposite(&self, dir: &Direction4) -> bool {
+impl Direction6 {
+    pub fn is_opposite(&self, dir: &Direction6) -> bool {
         match self {
-            Direction4::North => match dir {
-                Direction4::South => true,
+            Direction6::North => match dir {
+                Direction6::South => true,
                 _ => false
             },
-            Direction4::East => match dir {
-                Direction4::West => true,
+            Direction6::East => match dir {
+                Direction6::West => true,
                 _ => false
             },
-            Direction4::South => match dir {
-                Direction4::North => true,
+            Direction6::South => match dir {
+                Direction6::North => true,
                 _ => false
             },
-            Direction4::West => match dir {
-                Direction4::East => true,
+            Direction6::West => match dir {
+                Direction6::East => true,
+                _ => false
+            },
+            Direction6::Up => match dir {
+                Direction6::Down => true,
+                _ => false
+            },
+            Direction6::Down => match dir {
+                Direction6::Up => true,
                 _ => false
             },
         }
     }
 }
 
-impl Direction for Direction4 {
+impl Direction for Direction6 {
     fn all() -> Vec<Self> {
-        vec![Direction4::North, Direction4::East, Direction4::South, Direction4::West]
+        vec![
+            Direction6::North,
+            Direction6::East,
+            Direction6::South,
+            Direction6::West,
+            Direction6::Up,
+            Direction6::Down
+        ]
     }
 
     fn neighbour(&self, row: usize, col: usize, layer: usize, width: u32, length: u32, height: u32) -> Result<(usize, usize, usize), procedural::CoordError> {
         match self {
-            Direction4::North => match row {
+            Direction6::North => match row {
                 0 => Err(CoordError),
                 _ => Ok((row-1, col, layer))
             },
-            Direction4::East => match col {
+            Direction6::East => match col {
                 x if x+1 >= width as usize => Err(CoordError),
                 _ => Ok((row, col+1, layer))
             },
-            Direction4::South => match row {
+            Direction6::South => match row {
                 y if y+1 >= length as usize => Err(CoordError),
                 _ => Ok((row+1, col, layer))
             },
-            Direction4::West => match col {
+            Direction6::West => match col {
                 0 => Err(CoordError),
                 _ => Ok((row, col-1, layer))
+            },
+            Direction6::Up => match layer {
+                z if z+1 >= height as usize => Err(CoordError),
+                _ => Ok((row, col, layer+1))
+            },
+            Direction6::Down => match layer {
+                0 => Err(CoordError),
+                _ => Ok((row, col, layer-1))
             },
         }
     }
 
     fn opposite(&self) -> Self {
         match self {
-            Direction4::North => Direction4::South,
-            Direction4::East => Direction4::West,
-            Direction4::South => Direction4::North,
-            Direction4::West => Direction4::East,
+            Direction6::North => Direction6::South,
+            Direction6::East => Direction6::West,
+            Direction6::South => Direction6::North,
+            Direction6::West => Direction6::East,
+            Direction6::Up => Direction6::Down,
+            Direction6::Down => Direction6::Up,
         }
     }
 }

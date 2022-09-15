@@ -1,5 +1,6 @@
 10
 10
+2
 
-The first line is width, second line is height
+The first line is width, second line is length, third line is height
 The rest of the lines (like this one) are completely ignored

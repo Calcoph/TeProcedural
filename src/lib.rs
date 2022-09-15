@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::hash::Hash;
 use std::{collections::HashSet};
 #[cfg(feature = "view3d")]
@@ -18,19 +19,19 @@ struct DecisionBranch<T>
 where
     T: Tile
 {
-    deciding_coord: (usize, usize),
+    deciding_coord: (usize, usize, usize),
     tried_tiles: HashSet<T>,
-    dead_ends: Vec<(usize, usize)>,
-    temp_decided_coords: HashSet<(usize, usize)>
+    dead_ends: Vec<(usize, usize, usize)>,
+    temp_decided_coords: HashSet<(usize, usize, usize)>
 }
 
 impl<T> DecisionBranch<T>
 where
     T: Tile
 {
-    fn new(row: usize, col: usize) -> DecisionBranch<T> {
+    fn new(row: usize, col: usize, layer: usize) -> DecisionBranch<T> {
         DecisionBranch {
-            deciding_coord: (row, col),
+            deciding_coord: (row, col, layer),
             tried_tiles: HashSet::new(),
             dead_ends: vec![],
             temp_decided_coords: HashSet::new()
@@ -51,10 +52,12 @@ pub struct Board<T>
 where
     T: Tile
 {
-    pub tiles: Vec<Vec<MaybeTile<T>>>,
-    decision_stack: Vec<DecisionBranch<T>>, // TODO: generate the decision tree
-    dead_ends: Vec<(usize, usize)>,
+    pub tiles: Vec<Vec<Vec<MaybeTile<T>>>>,
+    decision_stack: Vec<DecisionBranch<T>>,
+    dead_ends: Vec<(usize, usize, usize)>,
+    current_layer: usize,
     width: u32,
+    length: u32,
     height: u32
 }
 
@@ -62,38 +65,75 @@ impl<T> Board<T>
 where
     T: Tile
 {
-    pub fn new(width: u32, height: u32) -> Board<T> {
-        let mut rows = vec![];
-        for _ in 0..height {
-            let mut row = vec![];
-            for _ in 0..width {
-                row.push(MaybeTile::Undecided(T::all()))
+    pub fn new(width: u32, length: u32, height: u32) -> Board<T> {
+        let mut layers = vec![];
+        for cur_layer in 0..height as usize {
+            let mut layer = vec![];
+            for _ in 0..length {
+                let mut row = vec![];
+                for _ in 0..width {
+                    row.push(MaybeTile::Undecided(T::possibles(cur_layer)))
+                }
+                layer.push(row)
             }
-            rows.push(row)
+            layers.push(layer)
         }
 
         let board = Board {
-            tiles: rows,
+            tiles: layers,
             decision_stack: vec![],
             dead_ends: vec![],
             width,
+            length,
             height,
+            current_layer: 0,
         };
+
+        #[cfg(feature = "validate")]
+        board.validate();
 
         board
     }
 
+    #[cfg(feature = "validate")]
+    fn validate(&self) {
+        let all = T::all();
+        let mut names = HashSet::new();
+        all.iter().for_each(|tile| {
+            if !names.insert(tile.get_name()) {
+                println!("WARNING: There is more than one tile with the name `{}`", tile.get_name())
+            }
+        });
+        let directions = T::Direction::all();
+        all.iter()
+            .flat_map(|tile| all.iter().map(|t| (tile, t)).collect::<Vec<_>>())
+            .flat_map(|(tile1, tile2)| directions.iter().map(|direction| (tile1, tile2, direction)).collect::<Vec<_>>())
+            .for_each(|(tile1, tile2, direction)| {
+                if tile1.get_rules()(tile2, *direction)
+                    !=
+                    tile2.get_rules()(tile1, direction.opposite())
+                {
+                    println!("ERROR: Rules are not bidirectional for {tile1:?} {tile2:?} {direction:?}")
+                }
+            });
+    }
+
     pub fn clean(&mut self) {
         self.tiles = vec![];
-        for _ in 0..self.height {
-            let mut row = vec![];
-            for _ in 0..self.width {
-                row.push(MaybeTile::Undecided(T::all()))
+        for cur_layer in 0..self.height as usize {
+            let mut layer = vec![];
+            for _ in 0..self.length {
+                let mut row = vec![];
+                for _ in 0..self.width {
+                    row.push(MaybeTile::Undecided(T::possibles(cur_layer)))
+                }
+                layer.push(row)
             }
-            self.tiles.push(row)
+            self.tiles.push(layer)
         }
         self.decision_stack = vec![];
         self.dead_ends = vec![];
+        self.current_layer = 0;
     }
 
     pub fn generate(&mut self) -> Result<(), ImpossibleBoardError> {
@@ -109,11 +149,11 @@ where
             BranchStatus::Complete => Ok(true),
             BranchStatus::DeadEnd => {self.go_back()?;Ok(false)},
             BranchStatus::Incomplete => {
-                let (tile, row, col) = if self.can_continue_branch() {
+                let (tile, row, col, layer) = if self.can_continue_branch() {
                     if let Some(current_branch) = self.decision_stack.last_mut() {
-                        let (row, col) = current_branch.deciding_coord;
+                        let (row, col, layer) = current_branch.deciding_coord;
                         let mut rng = rand::thread_rng();
-                        let choice = match &self.tiles[row][col] {
+                        let choice = match &self.tiles[layer][row][col] {
                             MaybeTile::Undecided(possibilities) => *possibilities
                                 .iter()
                                 .filter(|tile| !current_branch.tried_tiles.contains(tile))
@@ -121,21 +161,21 @@ where
                                 .unwrap(),
                             MaybeTile::Decided(_) => unreachable!(),
                         };
-                        self.tiles[row][col] = MaybeTile::Decided(choice);
+                        self.tiles[layer][row][col] = MaybeTile::Decided(choice);
                         current_branch.tried_tiles.insert(choice);
-                        (choice, row, col)
+                        (choice, row, col, layer)
                     } else {
                         unreachable!()
                     }
                 } else {
-                    let (row, col) = self.get_undecided();
-                    let tile = self.make_decision(row, col);
-                    let mut new_branch = DecisionBranch::new(row, col);
+                    let (row, col, layer) = self.get_undecided();
+                    let tile = self.make_decision(row, col, layer);
+                    let mut new_branch = DecisionBranch::new(row, col, layer);
                     new_branch.tried_tiles.insert(tile);
                     self.decision_stack.push(new_branch);
-                    (tile, row, col)
+                    (tile, row, col, layer)
                 };
-                let new_propagated = self.propagate(tile, row, col);
+                let new_propagated = self.propagate(tile, row, col, layer);
                 let current_branch = self.decision_stack.last_mut().unwrap();
                 current_branch.temp_decided_coords.extend(new_propagated.into_iter());
                 Ok(false)
@@ -153,33 +193,33 @@ where
     }
 
     pub fn get_status(&self) -> BranchStatus {
-        let undecideds_left = self.tiles.iter().any(|v| v.iter().any(|t| match t {
+        let undecideds_left = self.tiles.iter().any(|v| v.iter().any(|v| v.iter().any(|t| match t {
             MaybeTile::Undecided(_) => true,
             MaybeTile::Decided(_) => false,
-        }));
+        })));
 
-        let impossibilities = self.tiles.iter().any(|v| v.iter().any(|t| match t {
+        let impossibilities = self.tiles.iter().any(|v| v.iter().any(|v| v.iter().any(|t| match t {
             MaybeTile::Undecided(possibilities) => possibilities.len() == 0,
             MaybeTile::Decided(_) => false,
-        }));
+        })));
 
-        let branch_end = self.tiles.iter().enumerate().all(|(i, v)| v.iter().enumerate().all(|(j, t)| match t {
+        let branch_end = self.tiles.iter().enumerate().all(|(k, v)| v.iter().enumerate().all(|(i, v)| v.iter().enumerate().all(|(j, t)| match t {
             MaybeTile::Undecided(possibilities) => {
                 if possibilities.len() > 0 {
                     if let Some(current_branch) = self.decision_stack.last() {
-                        if current_branch.deciding_coord == (i, j) {
+                        if current_branch.deciding_coord == (i, j, k) {
                             if possibilities.len() <= current_branch.tried_tiles.len() {
                                 true
                             } else {
                                 false
                             }
-                        } else if current_branch.dead_ends.contains(&(i, j)) {
+                        } else if current_branch.dead_ends.contains(&(i, j, k)) {
                             true
                         } else {
                             false
                         }
                     } else {
-                        if self.dead_ends.contains(&(i, j)) {
+                        if self.dead_ends.contains(&(i, j, k)) {
                             true
                         } else {
                             false
@@ -190,7 +230,7 @@ where
                 }
             },
             MaybeTile::Decided(_) => true,
-        }));
+        })));
 
         match (impossibilities, branch_end, undecideds_left) {
             (true, _, _) => BranchStatus::DeadEnd,
@@ -200,62 +240,75 @@ where
         }
     }
 
-    fn get_undecided(&self) -> (usize, usize) {
-        let options = self.tiles.iter().enumerate()
-            .flat_map(|(i, row)| row.iter()
+    fn get_undecided(&mut self) -> (usize, usize, usize) {
+        let options: Vec<_>;
+        loop {
+            let layer = &self.tiles[self.current_layer];
+            let opt = layer.iter()
                 .enumerate()
-                .filter_map(move |(j, tile)| match tile {
-                    MaybeTile::Undecided(a) => if a.len() == 0 {
-                        None
-                    } else if let Some(current_branch) = self.decision_stack.last() {
-                        if current_branch.dead_ends.contains(&(i, j)) {
-                            None
-                        } else {
-                            Some(((i, j), a.len()))
-                        }
-                    } else {
-                        if self.dead_ends.contains(&(i, j)) {
-                            None
-                        } else {
-                            Some(((i, j), a.len()))    
-                        }
+                .flat_map(|(i, row)| {
+                    let board = &self;
+                    row.iter()
+                        .enumerate()
+                        .filter_map(move |(j, tile)| match tile {
+                            MaybeTile::Undecided(a) => if a.len() == 0 {
+                                None
+                            } else if let Some(current_branch) = board.decision_stack.last() {
+                                if current_branch.dead_ends.contains(&(i, j, board.current_layer)) {
+                                    None
+                                } else {
+                                    Some(((i, j, board.current_layer), a.len()))
+                                }
+                            } else {
+                                if board.dead_ends.contains(&(i, j, board.current_layer)) {
+                                    None
+                                } else {
+                                    Some(((i, j, board.current_layer), a.len()))    
+                                }
+                            },
+                            MaybeTile::Decided(_) => None,
+                        })
+                }).collect::<Vec<_>>();
+                let min = match opt.iter().min_by_key(|(_, key)| key) {
+                    Some((_, min)) => Some(*min),
+                    None => None,
+                };
+                match min {
+                    Some(min) => {
+                        options = opt.into_iter().filter(|(_, a)| *a == min).collect();
+                        break;
                     },
-                    MaybeTile::Decided(_) => None,
-                })
-            );
-        match options.clone().find(|option| option.1 == 1) {
-            Some(best_option) => best_option.0,
-            None => {
-                let mut rng = rand::thread_rng();
-                let option = options.choose(&mut rng).unwrap().0;
-                option
-            },
+                    None => self.current_layer += 1, // This layer is done
+                }
         }
+        let mut rng = rand::thread_rng();
+        let option = options.iter().choose(&mut rng).unwrap().0;
+        option
     }
 
-    fn make_decision(&mut self, row: usize, col: usize) -> T {
+    fn make_decision(&mut self, row: usize, col: usize, layer: usize) -> T {
         let mut rng = rand::thread_rng();
-        let choice = match &self.tiles[row][col] {
+        let choice = match &self.tiles[layer][row][col] {
             MaybeTile::Undecided(possibilities) => *possibilities.iter().choose(&mut rng).unwrap(),
             MaybeTile::Decided(_) => unreachable!(),
         };
-        self.tiles[row][col] = MaybeTile::Decided(choice);
+        self.tiles[layer][row][col] = MaybeTile::Decided(choice);
         choice
     }
 
-    fn propagate(&mut self, tile: T, row: usize, col: usize) -> Vec<(usize, usize)>{
+    fn propagate(&mut self, tile: T, row: usize, col: usize, layer: usize) -> Vec<(usize, usize, usize)>{
         let mut v = vec![];
-        let mut prop_dir = |direction: T::Direction, v: &mut Vec<(usize, usize)>| {
-            match direction.neighbour(row, col, self.width, self.height) {
-                Ok((row, col)) => {
-                    match &mut self.tiles[row][col] {
+        let mut prop_dir = |direction: T::Direction, v: &mut Vec<(usize, usize, usize)>| {
+            match direction.neighbour(row, col, layer, self.width, self.length, self.height) {
+                Ok((row, col, layer)) => {
+                    match &mut self.tiles[layer][row][col] {
                         MaybeTile::Undecided(possibilities) => {
-                            v.push((row, col));
+                            v.push((row, col, layer));
                             tile.propagate(possibilities, direction);
                             if possibilities.len() == 1 {
                                 let remaining_tile = *possibilities.iter().next().unwrap();
-                                self.tiles[row][col] = MaybeTile::Decided(remaining_tile);
-                                v.extend(self.propagate(remaining_tile, row, col).into_iter());
+                                self.tiles[layer][row][col] = MaybeTile::Decided(remaining_tile);
+                                v.extend(self.propagate(remaining_tile, row, col, layer).into_iter());
                             }
                         },
                         MaybeTile::Decided(_) => (),
@@ -264,7 +317,6 @@ where
                 Err(_) => ()
             }
         };
-
         for direction in Direction::all() {
             prop_dir(direction, &mut v);
         }
@@ -273,13 +325,17 @@ where
 
     #[cfg(feature = "view3d")]
     pub fn draw(&self, gpu: &GpuState, te_state: &mut TeState) {
-        for (i, row) in self.tiles.iter().enumerate() {
-            for (j, tile) in row.iter().enumerate() {
-                match tile {
-                    MaybeTile::Undecided(_) => (),
-                    MaybeTile::Decided(tile) => {
-                        te_state.instances.place_custom_model(&tile.get_name(), gpu, (j as f32,0.0,i as f32), None);
-                    },
+        for (k, layer) in self.tiles.iter().enumerate() {
+            for (i, row) in layer.iter().enumerate() {
+                for (j, tile) in row.iter().enumerate() {
+                    match tile {
+                        MaybeTile::Undecided(_) => (),
+                        MaybeTile::Decided(tile) => {
+                            if tile.has_model() {
+                                te_state.instances.place_custom_model(&tile.get_name(), gpu, (j as f32,k as f32,i as f32), None);
+                            }
+                        },
+                    }
                 }
             }
         }
@@ -301,17 +357,18 @@ where
 
     fn go_back(&mut self) -> Result<(), ImpossibleBoardError> {
         if let Some(current_branch) = self.decision_stack.pop() {
-            let (row, col) = current_branch.deciding_coord;
-            self.tiles[row][col] = MaybeTile::Undecided(T::all());
-            for (row, col) in current_branch.temp_decided_coords.iter() {
-                self.tiles[*row][*col] = MaybeTile::Undecided(T::all());
+            let (row, col, layer) = current_branch.deciding_coord;
+            self.tiles[layer][row][col] = MaybeTile::Undecided(T::possibles(layer));
+            for (row, col, layer) in current_branch.temp_decided_coords.iter() {
+                self.tiles[*layer][*row][*col] = MaybeTile::Undecided(T::possibles(*layer));
             };
-            self.recalculate(row, col);
-            for (row, col) in current_branch.temp_decided_coords.iter() {
-                self.recalculate(*row, *col);
+            self.recalculate(row, col, layer);
+            for (row, col, layer) in current_branch.temp_decided_coords.iter() {
+                self.recalculate(*row, *col, *layer);
             };
             if let Some(previous_branch) = self.decision_stack.last_mut() {
-                previous_branch.dead_ends.push(current_branch.deciding_coord)
+                previous_branch.dead_ends.push(current_branch.deciding_coord);
+                self.current_layer = previous_branch.deciding_coord.2;
             } else{
                 self.dead_ends.push(current_branch.deciding_coord)
             }
@@ -323,8 +380,8 @@ where
 
     fn can_continue_branch(&self) -> bool {
         if let Some(current_branch) = self.decision_stack.last() {
-            let (row, col) = current_branch.deciding_coord;
-            match &self.tiles[row][col] {
+            let (row, col, layer) = current_branch.deciding_coord;
+            match &self.tiles[layer][row][col] {
                 MaybeTile::Undecided(_) => true,
                 MaybeTile::Decided(_) => false,
             }
@@ -333,20 +390,20 @@ where
         }
     }
 
-    fn recalculate(&mut self, row: usize, col: usize) {
+    fn recalculate(&mut self, row: usize, col: usize, layer: usize) {
         let mut recalc = |direction: T::Direction| {
-            match direction.neighbour(row, col, self.width, self.height) {
-                Ok((row_t, col_t)) => {
-                    match self.tiles[row_t][col_t] {
+            match direction.neighbour(row, col, layer, self.width, self.length, self.height) {
+                Ok((row_t, col_t, layer_t)) => {
+                    match self.tiles[layer_t][row_t][col_t] {
                         MaybeTile::Undecided(_) => (),
                         MaybeTile::Decided(tile) => {
-                            let possibilities = match &mut self.tiles[row][col] {
+                            let possibilities = match &mut self.tiles[layer][row][col] {
                                 MaybeTile::Undecided(possibilities) => possibilities,
                                 MaybeTile::Decided(_) => unreachable!(),
                             };
                             tile.propagate(possibilities, direction.opposite());
                             if possibilities.len() == 1 {
-                                self.tiles[row_t][col_t] = MaybeTile::Decided(*possibilities.iter().next().unwrap())
+                                self.tiles[layer_t][row_t][col_t] = MaybeTile::Decided(*possibilities.iter().next().unwrap())
                             }
                         },
                     }
@@ -392,10 +449,23 @@ fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec
 
 pub struct CoordError;
 
+#[cfg(feature = "validate")]
+pub trait Direction: Sized + Copy + Debug {
+    direction!();
+}
+
+#[cfg(not(feature = "validate"))]
 pub trait Direction: Sized + Copy {
-    fn all() -> Vec<Self>;
-    fn neighbour(&self, row: usize, col: usize, width: u32, height: u32) -> Result<(usize, usize), CoordError>;
-    fn opposite(&self) -> Self;
+    direction!();
+}
+
+#[macro_export]
+macro_rules! direction {
+    () => {
+        fn all() -> Vec<Self>;
+        fn neighbour(&self, row: usize, col: usize, layer: usize, width: u32, length: u32, height: u32) -> Result<(usize, usize, usize), CoordError>;
+        fn opposite(&self) -> Self;
+    }
 }
 
 #[derive(Debug)]
@@ -407,25 +477,40 @@ where
     Decided(T),
 }
 
-pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy {
-    type Direction: Direction;
+#[cfg(feature = "validate")]
+pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy + Debug {
+    tile!();
+}
 
-    fn all() -> HashSet<Self>;
-    #[cfg(feature = "view3d")]
-    fn get_name(&self) -> String;
-    #[cfg(feature = "view3d")]
-    fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
-    fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Self::Direction) {
-        let can_stay = self.get_rules();
-        let mut to_remove = vec![];
-        for possibility in possibilities.iter() {
-            if !can_stay(possibility, direction) {
-                to_remove.push(*possibility);
+#[cfg(not(feature = "validate"))]
+pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy {
+    tile!();
+}
+
+#[macro_export]
+macro_rules! tile {
+    () => {
+        type Direction: Direction;
+
+        fn all() -> HashSet<Self>;
+        fn possibles(layer: usize) -> HashSet<Self>;
+        #[cfg(feature = "view3d")]
+        fn get_name(&self) -> String;
+        #[cfg(feature = "view3d")]
+        fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
+        fn has_model(&self) -> bool;
+        fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Self::Direction) {
+            let can_stay = self.get_rules();
+            let mut to_remove = vec![];
+            for possibility in possibilities.iter() {
+                if !can_stay(possibility, direction) {
+                    to_remove.push(*possibility);
+                }
+            }
+            for rem in to_remove {
+                possibilities.remove(&rem);
             }
         }
-        for rem in to_remove {
-            possibilities.remove(&rem);
-        }
+        fn get_rules(&self) -> Box<dyn Fn(&Self, Self::Direction) -> bool + '_>;
     }
-    fn get_rules(&self) -> Box<dyn Fn(&Self, Self::Direction) -> bool + '_>;
 }

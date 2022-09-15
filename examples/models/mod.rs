@@ -156,3 +156,153 @@ pub const TREE_I: &[u32] = &[
     15, 16, 12, // left trunk
     15, 12, 11
 ];
+
+pub const MOUNTAIN_N_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]},
+
+    ModelVertex { position: [0.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [1.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    //ModelVertex { position: [1.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+    //ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+];
+
+pub const MOUNTAIN_N_I: &[u32] = &[
+    0, 1, 2,
+    0, 2, 3,
+
+    1, 2, 4,
+    3, 0, 5,
+
+    0,1,4,
+    0,4,5,
+
+    2,3,5,
+    2,5,4
+];
+
+pub const MOUNTAIN_S_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]},
+
+    //ModelVertex { position: [0.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    //ModelVertex { position: [1.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [1.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+];
+
+pub const MOUNTAIN_S_I: &[u32] = &[
+    0, 1, 2,
+    0, 2, 3,
+
+    1, 2, 4,
+    3, 0, 5,
+
+    0,1,4,
+    0,4,5,
+
+    2,3,5,
+    2,5,4
+];
+
+pub const MOUNTAIN_E_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]},
+
+    ModelVertex { position: [0.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    //ModelVertex { position: [1.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    //ModelVertex { position: [1.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+];
+
+pub const MOUNTAIN_E_I: &[u32] = &[
+    0, 1, 2,
+    0, 2, 3,
+
+    1, 2, 4,
+    3, 0, 5,
+
+    0,1,4,
+    0,4,5,
+
+    2,3,5,
+    2,5,4
+];
+
+pub const MOUNTAIN_W_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]},
+
+    //ModelVertex { position: [0.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [1.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [1.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+    //ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+];
+
+pub const MOUNTAIN_W_I: &[u32] = &[
+    0, 1, 2,
+    0, 2, 3,
+
+    1, 2, 4,
+    3, 0, 5,
+
+    0,1,4,
+    0,4,5,
+
+    2,3,5,
+    2,5,4
+];
+
+pub const MOUNTAIN_D_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]},
+
+    ModelVertex { position: [0.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [1.0, 1.0, 1.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [1.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
+];
+
+pub const MOUNTAIN_D_I: &[u32] = &[
+    0, 1, 2,
+    0, 2, 3,
+
+    1, 2, 4,
+    3, 0, 5,
+
+    0,1,4,
+    0,4,5,
+
+    2,3,5,
+    2,5,4
+];
+
+pub const MOUNTAIN_U_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [1.0, 0.0]},
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]},
+
+    ModelVertex { position: [0.5, 1.0, 0.5], tex_coords: [0.0, 1.0]},
+];
+
+pub const MOUNTAIN_U_I: &[u32] = &[
+    0, 1, 2,
+    0, 2, 3,
+
+    0, 1, 4,
+    1, 2, 4,
+
+    2, 3, 4,
+    3, 0, 4,
+];
