@@ -48,11 +48,22 @@ pub enum BranchStatus {
 #[derive(Debug)]
 pub struct ImpossibleBoardError;
 
+#[derive(Debug)]
+pub struct OutOfBoardError;
+
+#[derive(Debug)]
+pub enum BadPlacementError{
+    TileOccupied,
+    TileAlreadyPlaced,
+    ImpossibleTile,
+    NotAllPossible
+}
+
 pub struct Board<T>
 where
     T: Tile
 {
-    pub tiles: Vec<Vec<Vec<MaybeTile<T>>>>,
+    tiles: Vec<Vec<Vec<MaybeTile<T>>>>,
     decision_stack: Vec<DecisionBranch<T>>,
     dead_ends: Vec<(usize, usize, usize)>,
     current_layer: usize,
@@ -175,11 +186,73 @@ where
                     self.decision_stack.push(new_branch);
                     (tile, row, col, layer)
                 };
-                let new_propagated = self.propagate(tile, row, col, layer);
-                let current_branch = self.decision_stack.last_mut().unwrap();
-                current_branch.temp_decided_coords.extend(new_propagated.into_iter());
+                self.set_tile(MaybeTile::Decided(tile), row, col, layer).unwrap();
                 Ok(false)
             }
+        }
+    }
+
+    pub fn set_tile(&mut self, tile: MaybeTile<T>, row: usize, col: usize, layer: usize) -> Result<(), BadPlacementError> {
+        match tile {
+            MaybeTile::Undecided(options) => match &self.tiles[layer][row][col] {
+                MaybeTile::Undecided(possibilities) => if possibilities.is_superset(&options) {
+                    self.tiles[layer][row][col] = MaybeTile::Undecided(options.clone());
+                    let changes = self.propagate_possibilities(&options, row, col, layer);
+                    let mut v = vec![];
+                    for ((row, col, layer), new_possibilities) in changes {
+                        match &mut self.tiles[layer][row][col] {
+                            MaybeTile::Undecided(_) => {
+                                self.tiles[layer][row][col] = MaybeTile::Undecided(new_possibilities);
+                                v.push((row, col, layer))
+                            },
+                            MaybeTile::Decided(t) => {
+                                if !new_possibilities.contains(t) {
+                                    unreachable!()
+                                }
+                            },
+                        }
+                    }
+                    let current_branch = self.decision_stack.last_mut().unwrap();
+                    current_branch.temp_decided_coords.extend(v.into_iter());
+                    Ok(())
+                } else {
+                    Err(BadPlacementError::NotAllPossible)
+                },
+                MaybeTile::Decided(tile) => if options.contains(tile) {
+                    Err(BadPlacementError::TileAlreadyPlaced)
+                } else {
+                    Err(BadPlacementError::TileOccupied)
+                },
+            },
+            MaybeTile::Decided(tile) => match &self.tiles[layer][row][col] {
+                MaybeTile::Undecided(possibilities) => if possibilities.contains(&tile) {
+                    self.tiles[layer][row][col] = MaybeTile::Decided(tile);
+                    let new_propagated = self.propagate(tile, row, col, layer);
+                    let current_branch = self.decision_stack.last_mut().unwrap();
+                    current_branch.temp_decided_coords.extend(new_propagated.into_iter());
+                    Ok(())
+                } else {
+                    Err(BadPlacementError::ImpossibleTile)
+                },
+                MaybeTile::Decided(old_tile) => if tile == *old_tile {
+                    Err(BadPlacementError::TileAlreadyPlaced)
+                } else {
+                    Err(BadPlacementError::TileOccupied)
+                },
+            },
+        }
+    }
+
+    pub fn get_tile(&self, row: usize, col: usize, layer: usize) -> Result<MaybeTile<T>, OutOfBoardError> {
+        match self.tiles.get(layer) {
+            Some(r) => match r.get(row) {
+                Some(c) => match c.get(col) {
+                    Some(t) => Ok((*t).clone()),
+                    None => Err(OutOfBoardError),
+                },
+                None => Err(OutOfBoardError),
+            },
+            None => Err(OutOfBoardError),
         }
     }
 
@@ -530,7 +603,7 @@ macro_rules! direction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MaybeTile<T>
 where
     T: Tile,
