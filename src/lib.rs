@@ -172,7 +172,6 @@ where
                                 .unwrap(),
                             MaybeTile::Decided(_) => unreachable!(),
                         };
-                        self.tiles[layer][row][col] = MaybeTile::Decided(choice);
                         current_branch.tried_tiles.insert(choice);
                         (choice, row, col, layer)
                     } else {
@@ -365,7 +364,6 @@ where
             MaybeTile::Undecided(possibilities) => *possibilities.iter().choose(&mut rng).unwrap(),
             MaybeTile::Decided(_) => unreachable!(),
         };
-        self.tiles[layer][row][col] = MaybeTile::Decided(choice);
         choice
     }
 
