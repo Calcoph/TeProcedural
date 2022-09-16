@@ -292,6 +292,7 @@ pub const HOUSE_W_I: &[u32] = &[
     14, 15, 17,
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
@@ -306,6 +307,7 @@ pub const MOUNTAIN_V: &[ModelVertex] = &[
     ModelVertex { position: [0.5, 2.5, 0.5], tex_coords: [0.0, 1.0]},
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_I: &[u32] = &[
     0, 1, 2,
     0, 2, 3,
@@ -367,6 +369,7 @@ pub const TREE_I: &[u32] = &[
     15, 12, 11
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_N_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
@@ -379,6 +382,7 @@ pub const MOUNTAIN_N_V: &[ModelVertex] = &[
     //ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_N_I: &[u32] = &[
     0, 1, 2,
     0, 2, 3,
@@ -393,6 +397,7 @@ pub const MOUNTAIN_N_I: &[u32] = &[
     2,5,4
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_S_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
@@ -405,6 +410,7 @@ pub const MOUNTAIN_S_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_S_I: &[u32] = &[
     0, 1, 2,
     0, 2, 3,
@@ -419,6 +425,7 @@ pub const MOUNTAIN_S_I: &[u32] = &[
     2,5,4
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_E_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
@@ -431,6 +438,7 @@ pub const MOUNTAIN_E_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_E_I: &[u32] = &[
     0, 1, 2,
     0, 2, 3,
@@ -445,6 +453,7 @@ pub const MOUNTAIN_E_I: &[u32] = &[
     2,5,4
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_W_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
@@ -457,6 +466,7 @@ pub const MOUNTAIN_W_V: &[ModelVertex] = &[
     //ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_W_I: &[u32] = &[
     0, 1, 2,
     0, 2, 3,
@@ -471,6 +481,7 @@ pub const MOUNTAIN_W_I: &[u32] = &[
     2,5,4
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_D_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
@@ -483,6 +494,7 @@ pub const MOUNTAIN_D_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 1.0, 0.0], tex_coords: [1.0, 0.0]},
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_D_I: &[u32] = &[
     0, 1, 2,
     0, 2, 3,
@@ -497,6 +509,7 @@ pub const MOUNTAIN_D_I: &[u32] = &[
     2,5,4
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_U_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, 
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 1.0]},
@@ -506,6 +519,7 @@ pub const MOUNTAIN_U_V: &[ModelVertex] = &[
     ModelVertex { position: [0.5, 1.0, 0.5], tex_coords: [0.0, 1.0]},
 ];
 
+#[allow(unused)]
 pub const MOUNTAIN_U_I: &[u32] = &[
     0, 1, 2,
     0, 2, 3,

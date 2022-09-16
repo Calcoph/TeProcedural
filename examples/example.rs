@@ -1,4 +1,4 @@
-use std::collections::{HashSet, hash_set};
+use std::collections::HashSet;
 use std::fmt::Display;
 #[cfg(feature = "view3d")]
 use std::{rc::Rc, cell::RefCell};
@@ -323,6 +323,21 @@ impl Tile for ExampleTile {
             _ => true
         }
     }
+
+    #[allow(unused_variables)]
+    fn get_distribution(&self, layer: usize) -> u32 {
+        match self {
+            ExampleTile::Water => 4,
+            ExampleTile::Ground => 4,
+            ExampleTile::Tree => 4,
+            ExampleTile::House(_) => 1,
+            ExampleTile::Road => 4,
+            ExampleTile::Hut => 4,
+            ExampleTile::Mountain => 4,
+            ExampleTile::Sand => 4,
+            ExampleTile::Air => 4,
+        }
+    }
 }
 
 impl Display for ExampleTile {
@@ -383,6 +398,7 @@ impl Direction for Direction4 {
         vec![Direction4::North, Direction4::East, Direction4::South, Direction4::West]
     }
 
+    #[allow(unused_variables)]
     fn neighbour(&self, row: usize, col: usize, layer: usize, width: u32, length: u32, height: u32) -> Result<(usize, usize, usize), procedural::CoordError> {
         match self {
             Direction4::North => match row {

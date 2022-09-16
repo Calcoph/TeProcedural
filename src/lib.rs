@@ -168,6 +168,13 @@ where
                             MaybeTile::Undecided(possibilities) => *possibilities
                                 .iter()
                                 .filter(|tile| !current_branch.tried_tiles.contains(tile))
+                                .flat_map(|tile| {
+                                    let mut v = Vec::new();
+                                    for _ in 0..tile.get_distribution(layer) {
+                                        v.push(tile);
+                                    }
+                                    v
+                                })
                                 .choose(&mut rng)
                                 .unwrap(),
                             MaybeTile::Decided(_) => unreachable!(),
@@ -361,7 +368,14 @@ where
     fn make_decision(&mut self, row: usize, col: usize, layer: usize) -> T {
         let mut rng = rand::thread_rng();
         let choice = match &self.tiles[layer][row][col] {
-            MaybeTile::Undecided(possibilities) => *possibilities.iter().choose(&mut rng).unwrap(),
+            MaybeTile::Undecided(possibilities) => *possibilities.iter()
+                .flat_map(|tile| {
+                    let mut v = Vec::new();
+                    for _ in 0..tile.get_distribution(layer) {
+                        v.push(tile);
+                    }
+                    v
+                }).choose(&mut rng).unwrap(),
             MaybeTile::Decided(_) => unreachable!(),
         };
         choice
@@ -645,5 +659,6 @@ macro_rules! tile {
             }
         }
         fn get_rules(&self) -> Box<dyn Fn(&Self, Self::Direction) -> bool + '_>;
+        fn get_distribution(&self, layer: usize) -> u32;
     }
 }

@@ -20,8 +20,6 @@ mod models;
 
 #[cfg(feature = "view3d")]
 fn main() {
-    use procedural::MaybeTile;
-
     let (event_loop, gpu, window, te_state) = pollster::block_on(te_player::prepare(InitialConfiguration {
         font_dir_path: String::from("resources/font"),
         icon_path: String::from("resources/icon.png"),
@@ -388,6 +386,21 @@ impl Tile for ExampleTile {
         match self {
             ExampleTile::Air => false,
             _ => true
+        }
+    }
+
+    #[allow(unused_variables)]
+    fn get_distribution(&self, layer: usize) -> u32 {
+        match self {
+            ExampleTile::Water => 4,
+            ExampleTile::Ground => 4,
+            ExampleTile::Tree => 4,
+            ExampleTile::House(_) => 1,
+            ExampleTile::Road => 4,
+            ExampleTile::Hut => 4,
+            ExampleTile::Mountain(_) => 1,
+            ExampleTile::Sand => 4,
+            ExampleTile::Air => 4,
         }
     }
 }

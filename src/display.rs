@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{MaybeTile, Board, Tile, Direction};
+use crate::{MaybeTile, Board, Tile};
 
 impl<T> Display for MaybeTile<T>
 where

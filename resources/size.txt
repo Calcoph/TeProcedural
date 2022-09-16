@@ -1,5 +1,5 @@
-20
-20
+10
+10
 2
 
 The first line is width, second line is length, third line is height
