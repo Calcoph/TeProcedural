@@ -233,9 +233,9 @@ where
         })));
 
         match (impossibilities, branch_end, undecideds_left) {
-            (true, _, _) => BranchStatus::DeadEnd,
-            (_, true, true) => BranchStatus::DeadEnd,
             (_, _, false) => BranchStatus::Complete,
+            (true, _, _) => BranchStatus::DeadEnd,
+            (_, true, _) => BranchStatus::DeadEnd,
             (_, _, _) => BranchStatus::Incomplete,
         }
     }
@@ -243,7 +243,7 @@ where
     fn get_undecided(&mut self) -> (usize, usize, usize) {
         let options: Vec<_>;
         loop {
-            let layer = &self.tiles[self.current_layer];
+            let layer = self.tiles.get(self.current_layer).unwrap();
             let opt = layer.iter()
                 .enumerate()
                 .flat_map(|(i, row)| {
@@ -296,7 +296,7 @@ where
         choice
     }
 
-    fn propagate(&mut self, tile: T, row: usize, col: usize, layer: usize) -> Vec<(usize, usize, usize)>{
+    fn propagate(&mut self, tile: T, row: usize, col: usize, layer: usize) -> Vec<(usize, usize, usize)> {
         let mut v = vec![];
         let mut prop_dir = |direction: T::Direction, v: &mut Vec<(usize, usize, usize)>| {
             match direction.neighbour(row, col, layer, self.width, self.length, self.height) {
@@ -304,11 +304,28 @@ where
                     match &mut self.tiles[layer][row][col] {
                         MaybeTile::Undecided(possibilities) => {
                             v.push((row, col, layer));
+                            let len = possibilities.len();
                             tile.propagate(possibilities, direction);
                             if possibilities.len() == 1 {
                                 let remaining_tile = *possibilities.iter().next().unwrap();
                                 self.tiles[layer][row][col] = MaybeTile::Decided(remaining_tile);
                                 v.extend(self.propagate(remaining_tile, row, col, layer).into_iter());
+                            } else if possibilities.len() < len {
+                                let possibilities = possibilities.clone();
+                                let changes = self.propagate_possibilities(&possibilities, row, col, layer);
+                                for ((row, col, layer), new_possibilities) in changes {
+                                    match &mut self.tiles[layer][row][col] {
+                                        MaybeTile::Undecided(_) => {
+                                            self.tiles[layer][row][col] = MaybeTile::Undecided(new_possibilities);
+                                            v.push((row, col, layer))
+                                        },
+                                        MaybeTile::Decided(t) => {
+                                            if !new_possibilities.contains(t) {
+                                                unreachable!()
+                                            }
+                                        },
+                                    }
+                                }
                             }
                         },
                         MaybeTile::Decided(_) => (),
@@ -319,6 +336,50 @@ where
         };
         for direction in Direction::all() {
             prop_dir(direction, &mut v);
+        }
+        v
+    }
+
+    fn propagate_possibilities(&self, possibilities: &HashSet<T>, row: usize, col: usize, layer: usize) -> Vec<((usize, usize, usize), HashSet<T>)> {
+        let mut v = vec![];
+        let prop_dir = |tile: T, direction: T::Direction| {
+            match direction.neighbour(row, col, layer, self.width, self.length, self.height) {
+                Ok((row, col, layer)) => {
+                    match &self.tiles[layer][row][col] {
+                        MaybeTile::Undecided(possibilities) => {
+                            let mut new_possibilities = possibilities.clone();
+                            tile.propagate(&mut new_possibilities, direction);
+
+                            Some(new_possibilities)
+                        },
+                        MaybeTile::Decided(_) => None,
+                    }
+                },
+                Err(_) => None
+            }
+        };
+        for direction in T::Direction::all() {
+            match direction.neighbour(row, col, layer, self.width, self.length, self.height) {
+                Ok((row, col, layer)) => match &self.tiles[layer][row][col] {
+                    MaybeTile::Undecided(next_possibilities) => {
+                        let len = next_possibilities.len();
+                        let mut next_possibilities = HashSet::new();
+                        for tile in possibilities.iter() {
+                            match prop_dir(*tile, direction) {
+                                Some(h) => for t in h {
+                                    next_possibilities.insert(t);
+                                },
+                                None => (),
+                            };
+                        }
+                        if len != next_possibilities.len() {
+                            v.push(((row, col, layer), next_possibilities))
+                        }
+                    },
+                    MaybeTile::Decided(_) => (),
+                },
+                Err(_) => (),
+            }
         }
         v
     }
@@ -370,6 +431,7 @@ where
                 previous_branch.dead_ends.push(current_branch.deciding_coord);
                 self.current_layer = previous_branch.deciding_coord.2;
             } else{
+                self.current_layer = 0;
                 self.dead_ends.push(current_branch.deciding_coord)
             }
             Ok(())

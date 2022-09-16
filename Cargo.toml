@@ -14,7 +14,7 @@ te-player = { path = "../tile-engine/te-player", optional = true}
 te-gamepad = { path = "../tile-engine/te-gamepad", optional = true}
 
 [features]
-#default = ["view3d", "validate"] #? Uncomment when debugging view3d only. so rust-analyzer takes it into account
+default = ["view3d", "validate"] #? Uncomment when debugging view3d only. so rust-analyzer takes it into account
 view3d = [
     "dep:pollster",
     "dep:image",

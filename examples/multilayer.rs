@@ -195,7 +195,13 @@ impl Tile for ExampleTile {
             ExampleTile::Water => "water",
             ExampleTile::Ground => "ground",
             ExampleTile::Tree => "tree",
-            ExampleTile::House(_) => "house",
+            ExampleTile::House(dir) => match dir {
+                Direction6::North => "houseN",
+                Direction6::East => "houseE",
+                Direction6::South => "houseS",
+                Direction6::West => "houseW",
+                _ => unreachable!()
+            },
             ExampleTile::Road => "road",
             ExampleTile::Hut => "hut",
             ExampleTile::Mountain(dir) => match dir {
@@ -333,7 +339,13 @@ impl Tile for ExampleTile {
             ExampleTile::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
             ExampleTile::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
             ExampleTile::Tree => Some((models::TREE_V.into(), models::TREE_I.into())),
-            ExampleTile::House(_) => Some((models::HOUSE_V.into(), models::HOUSE_I.into())),
+            ExampleTile::House(dir) => match dir {
+                Direction6::North => Some((models::HOUSE_N_V.into(), models::HOUSE_N_I.into())),
+                Direction6::East => Some((models::HOUSE_E_V.into(), models::HOUSE_E_I.into())),
+                Direction6::South => Some((models::HOUSE_S_V.into(), models::HOUSE_S_I.into())),
+                Direction6::West => Some((models::HOUSE_W_V.into(), models::HOUSE_W_I.into())),
+                _ => unreachable!()
+            },
             ExampleTile::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
             ExampleTile::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
             ExampleTile::Mountain(dir) => match dir {

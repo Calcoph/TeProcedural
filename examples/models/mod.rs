@@ -12,7 +12,147 @@ pub const SQUARE_I: [u32; 6] = [
     0, 2, 3
 ];
 
-pub const HOUSE_V: &[ModelVertex] = &[
+pub const HOUSE_N_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, // base
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [0.5, 1.0]}, // base
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [0.5, 0.0]}, // base
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]}, // base
+    
+    ModelVertex { position: [0.1, 0.0, 0.9], tex_coords: [0.5, 1.0]}, // front wall
+    ModelVertex { position: [0.9, 0.0, 0.9], tex_coords: [1.0, 1.0]}, // front wall
+    ModelVertex { position: [0.9, 0.5, 0.9], tex_coords: [1.0, 0.0]}, // front wall
+    ModelVertex { position: [0.1, 0.5, 0.9], tex_coords: [0.5, 0.0]}, // front wall
+    
+    ModelVertex { position: [0.40, 0.0, 0.1], tex_coords: [0.5+0.3/1.6, 1.0]}, // door
+    ModelVertex { position: [0.60, 0.0, 0.1], tex_coords: [0.5+0.5/1.6, 1.0]}, // door
+    ModelVertex { position: [0.60, 0.35, 0.1], tex_coords: [0.5+0.5/1.6, 1.0-0.35/0.5]}, // door
+    ModelVertex { position: [0.40, 0.35, 0.1], tex_coords: [0.5+0.3/1.6, 1.0-0.35/0.5]}, // door
+    
+    ModelVertex { position: [0.1, 0.0, 0.1], tex_coords: [1.0, 1.0]}, // back wall
+    ModelVertex { position: [0.9, 0.0, 0.1], tex_coords: [0.5, 1.0]}, // back wall
+    ModelVertex { position: [0.9, 0.5, 0.1], tex_coords: [0.5, 0.0]}, // back wall
+    ModelVertex { position: [0.1, 0.5, 0.1], tex_coords: [1.0, 0.0]}, // back wall
+
+    ModelVertex { position: [0.5, 1.0, 0.9], tex_coords: [0.75, 0.5]}, // ceiling
+    ModelVertex { position: [0.5, 1.0, 0.1], tex_coords: [0.75, 0.5]}, // ceiling
+];
+
+pub const HOUSE_N_I: &[u32] = &[
+    0, 1, 2, // base
+    0, 2, 3,
+
+    // back
+    // 15      14
+    //
+    // 12      13
+
+    // front
+    // 7        6
+    //   11  10
+    // 4  8  9  5
+
+    // ceiling
+    // 15  17  14
+    //
+    // 7   16  6
+
+    4, 5, 6, // front wall
+    4, 6, 7,
+
+    13, 9, 10, // back wall
+    13, 10, 14,
+    10, 15, 14,
+    10, 11, 15,
+    11, 12, 15,
+    8, 12, 11,
+
+    12, 4, 7, // left wall
+    12, 7, 15,
+
+    5, 13, 14, // right wall
+    5, 14, 6,
+    
+    7, 16, 17, // ceiling
+    7, 17, 15,
+
+    16, 6, 14, // ceiling
+    16, 14, 17,
+
+    7, 6, 16, // ceiling
+    14, 15, 17,
+];
+
+pub const HOUSE_E_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, // base
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [0.5, 1.0]}, // base
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [0.5, 0.0]}, // base
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]}, // base
+    
+    ModelVertex { position: [0.1, 0.0, 0.9], tex_coords: [0.5, 1.0]}, // front wall
+    ModelVertex { position: [0.9, 0.0, 0.9], tex_coords: [1.0, 1.0]}, // front wall
+    ModelVertex { position: [0.9, 0.5, 0.9], tex_coords: [1.0, 0.0]}, // front wall
+    ModelVertex { position: [0.1, 0.5, 0.9], tex_coords: [0.5, 0.0]}, // front wall
+    
+    ModelVertex { position: [0.9, 0.0, 0.4], tex_coords: [0.5+0.3/1.6, 1.0]}, // door
+    ModelVertex { position: [0.9, 0.0, 0.6], tex_coords: [0.5+0.5/1.6, 1.0]}, // door
+    ModelVertex { position: [0.9, 0.35, 0.6], tex_coords: [0.5+0.5/1.6, 1.0-0.35/0.5]}, // door
+    ModelVertex { position: [0.9, 0.35, 0.4], tex_coords: [0.5+0.3/1.6, 1.0-0.35/0.5]}, // door
+    
+    ModelVertex { position: [0.1, 0.0, 0.1], tex_coords: [1.0, 1.0]}, // back wall
+    ModelVertex { position: [0.9, 0.0, 0.1], tex_coords: [0.5, 1.0]}, // back wall
+    ModelVertex { position: [0.9, 0.5, 0.1], tex_coords: [0.5, 0.0]}, // back wall
+    ModelVertex { position: [0.1, 0.5, 0.1], tex_coords: [1.0, 0.0]}, // back wall
+
+    ModelVertex { position: [0.5, 1.0, 0.9], tex_coords: [0.75, 0.5]}, // ceiling
+    ModelVertex { position: [0.5, 1.0, 0.1], tex_coords: [0.75, 0.5]}, // ceiling
+];
+
+pub const HOUSE_E_I: &[u32] = &[
+    0, 1, 2, // base
+    0, 2, 3,
+
+    // back
+    // 15      14
+    //
+    // 12      13
+
+    // front
+    // 7        6
+    //   11  10
+    // 4  8  9  5
+
+    // ceiling
+    // 15  17  14
+    //
+    // 7   16  6
+
+    4, 5, 6, // front wall
+    4, 6, 7,
+
+    13, 12, 15, // back wall
+    13, 15, 14,
+    
+    12, 4, 7, // left wall
+    12, 7, 15,
+    
+    5, 9, 10, // right wall
+    5, 10, 6,
+    10, 14, 6,
+    10, 11, 14,
+    11, 13, 14,
+    8, 13, 11,
+    
+    7, 16, 17, // ceiling
+    7, 17, 15,
+
+    16, 6, 14, // ceiling
+    16, 14, 17,
+
+    7, 6, 16, // ceiling
+    14, 15, 17,
+];
+
+pub const HOUSE_S_V: &[ModelVertex] = &[
     ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, // base
     ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [0.5, 1.0]}, // base
     ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [0.5, 0.0]}, // base
@@ -37,7 +177,7 @@ pub const HOUSE_V: &[ModelVertex] = &[
     ModelVertex { position: [0.5, 1.0, 0.1], tex_coords: [0.75, 0.5]}, // ceiling
 ];
 
-pub const HOUSE_I: &[u32] = &[
+pub const HOUSE_S_I: &[u32] = &[
     0, 1, 2, // base
     0, 2, 3,
 
@@ -68,6 +208,76 @@ pub const HOUSE_I: &[u32] = &[
 
     12, 4, 7, // left wall
     12, 7, 15,
+
+    5, 13, 14, // right wall
+    5, 14, 6,
+    
+    7, 16, 17, // ceiling
+    7, 17, 15,
+
+    16, 6, 14, // ceiling
+    16, 14, 17,
+
+    7, 6, 16, // ceiling
+    14, 15, 17,
+];
+
+pub const HOUSE_W_V: &[ModelVertex] = &[
+    ModelVertex { position: [0.0, 0.0, 1.0], tex_coords: [0.0, 1.0]}, // base
+    ModelVertex { position: [1.0, 0.0, 1.0], tex_coords: [0.5, 1.0]}, // base
+    ModelVertex { position: [1.0, 0.0, 0.0], tex_coords: [0.5, 0.0]}, // base
+    ModelVertex { position: [0.0, 0.0, 0.0], tex_coords: [0.0, 0.0]}, // base
+    
+    ModelVertex { position: [0.1, 0.0, 0.9], tex_coords: [0.5, 1.0]}, // front wall
+    ModelVertex { position: [0.9, 0.0, 0.9], tex_coords: [1.0, 1.0]}, // front wall
+    ModelVertex { position: [0.9, 0.5, 0.9], tex_coords: [1.0, 0.0]}, // front wall
+    ModelVertex { position: [0.1, 0.5, 0.9], tex_coords: [0.5, 0.0]}, // front wall
+    
+    ModelVertex { position: [0.1, 0.0, 0.4], tex_coords: [0.5+0.3/1.6, 1.0]}, // door
+    ModelVertex { position: [0.1, 0.0, 0.6], tex_coords: [0.5+0.5/1.6, 1.0]}, // door
+    ModelVertex { position: [0.1, 0.35, 0.6], tex_coords: [0.5+0.5/1.6, 1.0-0.35/0.5]}, // door
+    ModelVertex { position: [0.1, 0.35, 0.4], tex_coords: [0.5+0.3/1.6, 1.0-0.35/0.5]}, // door
+    
+    ModelVertex { position: [0.1, 0.0, 0.1], tex_coords: [1.0, 1.0]}, // back wall
+    ModelVertex { position: [0.9, 0.0, 0.1], tex_coords: [0.5, 1.0]}, // back wall
+    ModelVertex { position: [0.9, 0.5, 0.1], tex_coords: [0.5, 0.0]}, // back wall
+    ModelVertex { position: [0.1, 0.5, 0.1], tex_coords: [1.0, 0.0]}, // back wall
+
+    ModelVertex { position: [0.5, 1.0, 0.9], tex_coords: [0.75, 0.5]}, // ceiling
+    ModelVertex { position: [0.5, 1.0, 0.1], tex_coords: [0.75, 0.5]}, // ceiling
+];
+
+pub const HOUSE_W_I: &[u32] = &[
+    0, 1, 2, // base
+    0, 2, 3,
+
+    // back
+    // 15      14
+    //
+    // 12      13
+
+    // front
+    // 7        6
+    //   11  10
+    // 4  8  9  5
+
+    // ceiling
+    // 15  17  14
+    //
+    // 7   16  6
+
+    4, 5, 6, // front wall
+    4, 6, 7,
+
+    12, 8, 11, // left wall
+    12, 11, 15,
+    11, 7, 15,
+    11, 10, 7,
+    10, 4, 7,
+    9, 4, 10,
+
+    13, 12, 15, // back wall
+    13, 15, 14,
 
     5, 13, 14, // right wall
     5, 14, 6,
