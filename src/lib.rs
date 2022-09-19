@@ -1,3 +1,149 @@
+//! Procedurally generate 2D or 3D maps.
+//! 
+//! ## Getting Started
+//! This example assumes that the "view3d" feature is disabled. For
+//! examples using view3d see the examples in the github repo.
+//! ```rust
+//! use std::{collections::HashSet, fmt::Display};
+//! 
+//! fn main() {
+//!     // First, we choose the size of the board
+//!     let width = 10;
+//!     let length = 10;
+//!     let height = 1;
+//!     // What kind of board will be generated is dictated by <ChessTile> We will define ChessTile later
+//!     let mut board = procedural::Board::<ChessTile>::new(width, length, height);
+//!     //board.set_tile(procedural::MaybeTile::Decided(ChessTile::Black), 0, 0, 0).unwrap(); // Uncomment this line so top-left corner is black
+//!     //board.set_tile(procedural::MaybeTile::Decided(ChessTile::White), 0, 0, 0).unwrap(); // Uncomment this line so top-left corner is white
+//!     // After setting (or not) the initial state of the board, we can generate the rest of it. With Board::generate(&mut self).
+//!     board.generate().unwrap();
+//!     // Because ChessTile implements Display, we can print it.
+//!     println!("{board}")
+//! }
+//! 
+//! #[derive(Clone, Copy, Hash, PartialEq, Eq)] // Derives required to implement procedural::Tile
+//! enum ChessTile {
+//!     // We are going to generate a simple chess board, which only has 2 kind of tiles. Black and white.
+//!     Black,
+//!     White
+//! }
+//! 
+//! impl procedural::Tile for ChessTile {
+//!     type Direction = ChessDirection; // ChessDirection defined later.
+//! 
+//!     fn all() -> std::collections::HashSet<Self> {
+//!         // A set containing all the possible tiles
+//!         let mut h = HashSet::new();
+//!         h.insert(ChessTile::Black);
+//!         h.insert(ChessTile::White);
+//!         h
+//!     }
+//! 
+//!     #[allow(unused_variables)]
+//!     fn possibles(layer: usize) -> std::collections::HashSet<Self> {
+//!         // Same as Tile::all(). But we can choose to have different possibilities depending on the layer.
+//!         // Since a chess board is 2D, all() and possibles(layer) are exactly the same.
+//!         let mut h = HashSet::new();
+//!         h.insert(ChessTile::Black);
+//!         h.insert(ChessTile::White);
+//!         h
+//!     }
+//! 
+//!     fn get_rules(&self) -> Box<dyn Fn(&Self,Self::Direction) -> bool+ '_> {
+//!         // The rules are what will make the chess pattern appear.
+//!         match self {
+//!             ChessTile::Black => Box::new(|tile: &ChessTile, _direction: ChessDirection| match tile {
+//!                 ChessTile::Black => false,
+//!                 ChessTile::White => true, // Black tiles can only be next to white tiles.
+//!             }),
+//!             ChessTile::White => Box::new(|tile: &ChessTile, _direction: ChessDirection| match tile {
+//!                 ChessTile::Black => true, // White tiles can only be next to black tiles.
+//!                 ChessTile::White => false,
+//!             }),
+//!         }
+//!     }
+//! 
+//!     #[allow(unused_variables)]
+//!     fn get_distribution(&self, layer: usize) -> u32 {
+//!         // Since white tiles are as common as black tiles, they both return the same number.
+//!         // Same results would be achieved by returning any other number,
+//!         // but for performance reasons, we will return 1.
+//!         1
+//!     }
+//! }
+//! 
+//! impl Display for ChessTile {
+//!     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//!         match self {
+//!             ChessTile::Black => write!(f, " "),
+//!             ChessTile::White => write!(f, "#"),
+//!         }
+//!     }
+//! }
+//! 
+//! #[derive(Clone, Copy)]
+//! enum ChessDirection {
+//!     // Since chess is a 2D board and we don't need to look diagonally,
+//!     // 4 directions are enough. 2 for horizontal, 2 for vertical.
+//!     North,
+//!     East,
+//!     South,
+//!     West
+//! }
+//! 
+//! impl procedural::Direction for ChessDirection {
+//!     fn all() -> Vec<Self> {
+//!         // Same as Tile::all()
+//!         vec![ChessDirection::North, ChessDirection::East, ChessDirection::South, ChessDirection::West]
+//!     }
+//! 
+//!     #[allow(unused_variables)]
+//!     fn neighbour(
+//!         &self,
+//!         row: usize,
+//!         col: usize,
+//!         layer: usize,
+//!         width: u32,
+//!         length: u32,
+//!         height: u32
+//!     ) -> Result<(usize, usize, usize), procedural::CoordError> {
+//!         // Converts the input coordinates according to the direction.
+//!         // If the output would be out of the board, we return procedural::CoordError instead
+//!         match self {
+//!             ChessDirection::North => match row {
+//!                 0 => Err(procedural::CoordError),
+//!                 _ => Ok((row-1, col, layer))
+//!             },
+//!             ChessDirection::East => match col {
+//!                 x if x+1 >= width as usize => Err(procedural::CoordError),
+//!                 _ => Ok((row, col+1, layer))
+//!             },
+//!             ChessDirection::South => match row {
+//!                 y if y+1 >= length as usize => Err(procedural::CoordError),
+//!                 _ => Ok((row+1, col, layer))
+//!             },
+//!             ChessDirection::West => match col {
+//!                 0 => Err(procedural::CoordError),
+//!                 _ => Ok((row, col-1, layer))
+//!             },
+//!         }
+//!     }
+//! 
+//!     fn opposite(&self) -> Self {
+//!         // All directions must have an opposite so the algorithm works correctly.
+//!         match self {
+//!             ChessDirection::North => ChessDirection::South,
+//!             ChessDirection::East => ChessDirection::West,
+//!             ChessDirection::South => ChessDirection::North,
+//!             ChessDirection::West => ChessDirection::East,
+//!         }
+//!     }
+//! }
+//! ```
+
+#![deny(missing_docs)]
+#![deny(missing_doc_code_examples)]
+
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::{collections::HashSet};
@@ -39,26 +185,39 @@ where
     }
 }
 
+/// TODO
 pub enum BranchStatus {
+    /// TODO
     Complete,
+    /// TODO
     DeadEnd,
+    /// TODO
     Incomplete
 }
 
 #[derive(Debug)]
+/// Due to the rules/directions/tiles/size of this board, there is no combination of tiles that meet all rules
 pub struct ImpossibleBoardError;
 
 #[derive(Debug)]
+/// Returned instead of a coordinate that would be outside the board
 pub struct OutOfBoardError;
 
 #[derive(Debug)]
+/// Returned when manually placing tiles that are impossible in the current state of the board.
+/// See [Board::set_tile()]
 pub enum BadPlacementError{
+    /// When trying to place a tile in a position that already has a tile
     TileOccupied,
+    /// When trying to place a tile that was already placed
     TileAlreadyPlaced,
+    /// When placing a tile is not possible due to the surrounding tiles' rules
     ImpossibleTile,
+    /// When not all tiles of a set of possibilities can be placed in a tile, due to surrounding tiles' rules
     NotAllPossible
 }
 
+/// Represents the 2D or 3D board that we want to procedurally generate.
 pub struct Board<T>
 where
     T: Tile
@@ -76,6 +235,8 @@ impl<T> Board<T>
 where
     T: Tile
 {
+    /// Create an empty board.
+    /// The initial state of the board is determined by T::possibles(layer)
     pub fn new(width: u32, length: u32, height: u32) -> Board<T> {
         let mut layers = vec![];
         for cur_layer in 0..height as usize {
@@ -127,8 +288,10 @@ where
                     println!("ERROR: Rules are not bidirectional for {tile1:?} {tile2:?} {direction:?}")
                 }
             });
+        // TODO: Check if all directions have an opposite. And that that opposite truly is the opposite.
     }
 
+    /// Returns the board to its empty state. Exactly the same as Board::new(), except wihout creating a new object
     pub fn clean(&mut self) {
         self.tiles = vec![];
         for cur_layer in 0..self.height as usize {
@@ -147,6 +310,8 @@ where
         self.current_layer = 0;
     }
 
+    /// Fill the entire board.
+    /// Either it retuns Ok(()) and the board is full, or the board is impossible to fill. See [ImpossibleBoardError]
     pub fn generate(&mut self) -> Result<(), ImpossibleBoardError> {
         let mut complete = false;
         while !complete {
@@ -155,6 +320,8 @@ where
         Ok(())
     }
 
+    /// Generate a single tile. It may generate more than one if the generated tile makes it so that only 1 tile can be in another position.
+    /// returns true if the board has been filled. False if not. [ImpossibleBoardError] if it can't continue.
     pub fn generate_1(&mut self) -> Result<bool, ImpossibleBoardError> {
         match self.get_status() {
             BranchStatus::Complete => Ok(true),
@@ -187,17 +354,60 @@ where
                 } else {
                     let (row, col, layer) = self.get_undecided();
                     let tile = self.make_decision(row, col, layer);
-                    let mut new_branch = DecisionBranch::new(row, col, layer);
-                    new_branch.tried_tiles.insert(tile);
+                    let new_branch = DecisionBranch::new(row, col, layer);
                     self.decision_stack.push(new_branch);
                     (tile, row, col, layer)
                 };
-                self.set_tile(MaybeTile::Decided(tile), row, col, layer).unwrap();
+                self.change_tile(tile, row, col, layer);
                 Ok(false)
             }
         }
     }
 
+    fn change_tile(&mut self, tile: T, row: usize, col: usize, layer: usize) {
+        self.tiles[layer][row][col] = MaybeTile::Decided(tile);
+        let new_propagated = self.propagate(tile, row, col, layer);
+        let current_branch = self.decision_stack.last_mut().unwrap();
+        current_branch.tried_tiles.insert(tile);
+        current_branch.temp_decided_coords.extend(new_propagated.into_iter());
+    }
+
+    /// Tries to set a tile. This can only be done to reduce possibilities, otherwise it will return [BadPlacementError].
+    /// ## example
+    /// Assuming our tile is:
+    /// ```
+    /// enum MyTile {
+    ///     Yellow,
+    ///     Green,
+    ///     Red
+    /// }
+    /// ```
+    /// This code will panic:
+    /// ```should_panic
+    #[doc = include_str!("../doc_helpers/MyTile.rs")]
+    /// let mut board = procedural::Board::<MyTile>::new(5, 5, 1);
+    /// # let mut yellow_and_green_and_red = std::collections::HashSet::new();
+    /// # yellow_and_green_and_red.insert(MyTile::Yellow);
+    /// # yellow_and_green_and_red.insert(MyTile::Green);
+    /// # yellow_and_green_and_red.insert(MyTile::Green);
+    /// // yellow_and_green_and_red is a hashmap containing Yellow, Green and Red.
+    /// // On creation, every tile of the board is yellow_and_green_and_red. Since those are all the options
+    /// assert_eq!(board.get_tile(0,0,0).unwrap(), procedural::MaybeTile::Undecided(yellow_and_green_and_red));
+    /// 
+    /// # let mut yellow_and_green = std::collections::HashSet::new();
+    /// # yellow_and_green.insert(MyTile::Yellow);
+    /// # yellow_and_green.insert(MyTile::Green);
+    ///  // yellow_and_green is a HashSet that only contains Yellow and Green.
+    /// board.set_tile(procedural::MaybeTile::Undecided(yellow_and_green), 0, 0, 0).unwrap(); // This won't panic.
+    /// // Since 0,0,0 was never set. So both yellow and green are valid
+    /// # let mut yellow_and_red = std::collections::HashSet::new();
+    /// # yellow_and_red.insert(MyTile::Yellow);
+    /// # yellow_and_red.insert(MyTile::Green);
+    /// 
+    ///  // yellow_and_red is a HashSet that only contains Yellow and Red
+    /// board.set_tile(procedural::MaybeTile::Undecided(yellow_and_red), 0, 0, 0).unwrap(); // This will panic.
+    /// // Since 0,0,0 doesn't have red as a possibility (due to the previous iine), and we tried to add it.
+    /// ```
     pub fn set_tile(&mut self, tile: MaybeTile<T>, row: usize, col: usize, layer: usize) -> Result<(), BadPlacementError> {
         match tile {
             MaybeTile::Undecided(options) => match &self.tiles[layer][row][col] {
@@ -218,6 +428,8 @@ where
                             },
                         }
                     }
+                    let new_branch = DecisionBranch::new(row, col, layer);
+                    self.decision_stack.push(new_branch);
                     let current_branch = self.decision_stack.last_mut().unwrap();
                     current_branch.temp_decided_coords.extend(v.into_iter());
                     Ok(())
@@ -232,10 +444,9 @@ where
             },
             MaybeTile::Decided(tile) => match &self.tiles[layer][row][col] {
                 MaybeTile::Undecided(possibilities) => if possibilities.contains(&tile) {
-                    self.tiles[layer][row][col] = MaybeTile::Decided(tile);
-                    let new_propagated = self.propagate(tile, row, col, layer);
-                    let current_branch = self.decision_stack.last_mut().unwrap();
-                    current_branch.temp_decided_coords.extend(new_propagated.into_iter());
+                    let new_branch = DecisionBranch::new(row, col, layer);
+                    self.decision_stack.push(new_branch);
+                    self.change_tile(tile, row, col, layer);
                     Ok(())
                 } else {
                     Err(BadPlacementError::ImpossibleTile)
@@ -249,6 +460,7 @@ where
         }
     }
 
+    /// TODO
     pub fn get_tile(&self, row: usize, col: usize, layer: usize) -> Result<MaybeTile<T>, OutOfBoardError> {
         match self.tiles.get(layer) {
             Some(r) => match r.get(row) {
@@ -262,6 +474,7 @@ where
         }
     }
 
+    /// TODO
     pub fn generate_n(&mut self, n: u32) -> Result<(), ImpossibleBoardError> {
         for _ in 0..n {
             if self.generate_1()? {
@@ -271,6 +484,7 @@ where
         Ok(())
     }
 
+    /// TODO
     pub fn get_status(&self) -> BranchStatus {
         let undecideds_left = self.tiles.iter().any(|v| v.iter().any(|v| v.iter().any(|t| match t {
             MaybeTile::Undecided(_) => true,
@@ -594,7 +808,19 @@ fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec
     te_renderer::model::Model{ meshes, transparent_meshes: vec![], materials }
 }
 
+/// TODO
 pub struct CoordError;
+
+macro_rules! direction {
+    () => {
+        /// TODO
+        fn all() -> Vec<Self>;
+        /// TODO
+        fn neighbour(&self, row: usize, col: usize, layer: usize, width: u32, length: u32, height: u32) -> Result<(usize, usize, usize), CoordError>;
+        /// TODO
+        fn opposite(&self) -> Self;
+    }
+}
 
 #[cfg(feature = "validate")]
 pub trait Direction: Sized + Copy + Debug {
@@ -602,50 +828,39 @@ pub trait Direction: Sized + Copy + Debug {
 }
 
 #[cfg(not(feature = "validate"))]
+/// TODO
 pub trait Direction: Sized + Copy {
     direction!();
 }
 
-#[macro_export]
-macro_rules! direction {
-    () => {
-        fn all() -> Vec<Self>;
-        fn neighbour(&self, row: usize, col: usize, layer: usize, width: u32, length: u32, height: u32) -> Result<(usize, usize, usize), CoordError>;
-        fn opposite(&self) -> Self;
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// TODO
 pub enum MaybeTile<T>
 where
     T: Tile,
 {
+    /// TODO
     Undecided(HashSet<T>),
+    /// TODO
     Decided(T),
 }
 
-#[cfg(feature = "validate")]
-pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy + Debug {
-    tile!();
-}
-
-#[cfg(not(feature = "validate"))]
-pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy {
-    tile!();
-}
-
-#[macro_export]
 macro_rules! tile {
     () => {
+        /// TODO
         type Direction: Direction;
 
+        /// TODO
         fn all() -> HashSet<Self>;
+        /// TODO
         fn possibles(layer: usize) -> HashSet<Self>;
         #[cfg(feature = "view3d")]
         fn get_name(&self) -> String;
         #[cfg(feature = "view3d")]
         fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
+        #[cfg(feature = "view3d")]
         fn has_model(&self) -> bool;
+        /// TODO
         fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Self::Direction) {
             let can_stay = self.get_rules();
             let mut to_remove = vec![];
@@ -658,7 +873,20 @@ macro_rules! tile {
                 possibilities.remove(&rem);
             }
         }
+        /// TODO
         fn get_rules(&self) -> Box<dyn Fn(&Self, Self::Direction) -> bool + '_>;
+        /// TODO
         fn get_distribution(&self, layer: usize) -> u32;
     }
+}
+
+#[cfg(feature = "validate")]
+pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy + Debug {
+    tile!();
+}
+
+#[cfg(not(feature = "validate"))]
+/// TODO
+pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy {
+    tile!();
 }

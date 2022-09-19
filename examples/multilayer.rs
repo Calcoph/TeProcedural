@@ -382,6 +382,7 @@ impl Tile for ExampleTile {
         set
     }
 
+    #[cfg(feature = "view3d")]
     fn has_model(&self) -> bool {
         match self {
             ExampleTile::Air => false,
