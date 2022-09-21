@@ -185,13 +185,13 @@ where
     }
 }
 
-/// TODO
+/// The status of the current decision branch
 pub enum BranchStatus {
-    /// TODO
+    /// The board is complete and no generating has to be done
     Complete,
-    /// TODO
+    /// There is no possible board from this point on, must go back the decision tree and try another branch
     DeadEnd,
-    /// TODO
+    /// This branch leads to a valid board, but not all tiles have been selected yet
     Incomplete
 }
 
@@ -460,7 +460,7 @@ where
         }
     }
 
-    /// TODO
+    /// Returns the tile at a specified position
     pub fn get_tile(&self, row: usize, col: usize, layer: usize) -> Result<MaybeTile<T>, OutOfBoardError> {
         match self.tiles.get(layer) {
             Some(r) => match r.get(row) {
@@ -474,7 +474,7 @@ where
         }
     }
 
-    /// TODO
+    /// Generate n tiles at once
     pub fn generate_n(&mut self, n: u32) -> Result<(), ImpossibleBoardError> {
         for _ in 0..n {
             if self.generate_1()? {
@@ -484,7 +484,7 @@ where
         Ok(())
     }
 
-    /// TODO
+    /// Returns the [BranchStatus] of the current branch of the decision tree
     pub fn get_status(&self) -> BranchStatus {
         let undecideds_left = self.tiles.iter().any(|v| v.iter().any(|v| v.iter().any(|t| match t {
             MaybeTile::Undecided(_) => true,
@@ -684,6 +684,7 @@ where
     }
 
     #[cfg(feature = "view3d")]
+    /// Draws the current state of the board
     pub fn draw(&self, gpu: &GpuState, te_state: &mut TeState) {
         for (k, layer) in self.tiles.iter().enumerate() {
             for (i, row) in layer.iter().enumerate() {
@@ -702,6 +703,7 @@ where
     }
 
     #[cfg(feature = "view3d")]
+    /// Loads all models so they can be rendered 
     pub fn load_models(&self, gpu: &GpuState, te_state: &mut TeState) {
         for tile in T::all() {
             match tile.get_model() {
@@ -808,59 +810,64 @@ fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec
     te_renderer::model::Model{ meshes, transparent_meshes: vec![], materials }
 }
 
-/// TODO
+/// Returned when trying to access a position outside of the board
 pub struct CoordError;
 
 macro_rules! direction {
     () => {
-        /// TODO
+        /// All the possible directions
         fn all() -> Vec<Self>;
-        /// TODO
+        /// The position this direction points to from a certain position
         fn neighbour(&self, row: usize, col: usize, layer: usize, width: u32, length: u32, height: u32) -> Result<(usize, usize, usize), CoordError>;
-        /// TODO
+        /// The direction that works exactly opposite when using [Direction::neighbour()]
         fn opposite(&self) -> Self;
     }
 }
 
 #[cfg(feature = "validate")]
+/// Directions that are relevant to decide if a tile can be placed or not in a certain position
 pub trait Direction: Sized + Copy + Debug {
     direction!();
 }
 
 #[cfg(not(feature = "validate"))]
-/// TODO
+/// Directions that are relevant to decide if a tile can be placed or not in a certain position
 pub trait Direction: Sized + Copy {
     direction!();
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// TODO
+/// Represents the various states that can have a slot in the board
 pub enum MaybeTile<T>
 where
     T: Tile,
 {
-    /// TODO
+    /// The slot has more than 1 valid option.
     Undecided(HashSet<T>),
-    /// TODO
+    /// The slot has been allocated to a tile.
     Decided(T),
 }
 
 macro_rules! tile {
     () => {
-        /// TODO
+        /// Directions that are relevant to this type of tile.
         type Direction: Direction;
 
-        /// TODO
+        /// Set containing all the possible tiles.
         fn all() -> HashSet<Self>;
-        /// TODO
+
+        /// Like [Tile::all()], but depending on the layer.
         fn possibles(layer: usize) -> HashSet<Self>;
         #[cfg(feature = "view3d")]
+        /// **distinct** name, one for each tile with a different model.
         fn get_name(&self) -> String;
         #[cfg(feature = "view3d")]
+        /// If the model has a model, returns its vertex and triangle indices
         fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
         #[cfg(feature = "view3d")]
+        /// If this tile has a model or not (is invisible)
         fn has_model(&self) -> bool;
-        /// TODO
+        /// How the rest of tiles will react when this one is decided
         fn propagate(&self, possibilities: &mut HashSet<Self>, direction: Self::Direction) {
             let can_stay = self.get_rules();
             let mut to_remove = vec![];
@@ -873,20 +880,21 @@ macro_rules! tile {
                 possibilities.remove(&rem);
             }
         }
-        /// TODO
+        /// Determines which tiles can be next to this one, depending on the direction
         fn get_rules(&self) -> Box<dyn Fn(&Self, Self::Direction) -> bool + '_>;
-        /// TODO
+        /// Get the chance of this tile being chosen randomly, where 1 is the lowest chance and 2 is twice as likely as 1, etc.
         fn get_distribution(&self, layer: usize) -> u32;
     }
 }
 
 #[cfg(feature = "validate")]
+/// Represents a tile of the board
 pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy + Debug {
     tile!();
 }
 
 #[cfg(not(feature = "validate"))]
-/// TODO
+/// Represents a tile of the board
 pub trait Tile: Sized + Eq + PartialEq + Hash + Clone + Copy {
     tile!();
 }
