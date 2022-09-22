@@ -9,9 +9,9 @@ edition = "2021"
 rand = "0.8.5"
 pollster = { version = "0.2.5", optional = true }
 image = { version = "0.24.3", optional = true}
-te-renderer = { path = "../tile-engine/te-renderer", optional = true}
-te-player = { path = "../tile-engine/te-player", optional = true}
-te-gamepad = { path = "../tile-engine/te-gamepad", optional = true}
+te-renderer = { git = "https://github.com/Calcoph/Teengine.git", optional = true}
+te-player = { git = "https://github.com/Calcoph/Teengine.git", optional = true}
+te-gamepad = { git = "https://github.com/Calcoph/Teengine.git", optional = true}
 
 [features]
 #default = ["view3d", "validate"] #? Uncomment when debugging view3d only. so rust-analyzer takes it into account

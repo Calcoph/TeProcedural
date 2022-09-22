@@ -13,7 +13,7 @@ Run with `cargo run --example example` for simple run and `cargo run --example e
 Since this crate is not in crates.io, you'll have to add it to your Cargo.toml using a git path.
 ```toml
 [dependencies]
-procedural = { git = TODO}
+procedural = { git = https://github.com/Calcoph/TeProcedural.git}
 ```
 
 # Tutorial
