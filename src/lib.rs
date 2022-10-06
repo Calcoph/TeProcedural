@@ -194,7 +194,9 @@ pub enum BranchStatus {
     /// There is no possible board from this point on, must go back the decision tree and try another branch
     DeadEnd,
     /// This branch leads to a valid board, but not all tiles have been selected yet
-    Incomplete
+    Incomplete,
+    /// The current layer is complete, but the board is not, generating must continue.
+    CompleteLayer
 }
 
 #[derive(Debug)]
@@ -362,6 +364,7 @@ where
                 self.change_tile(tile, row, col, layer);
                 Ok(false)
             }
+            BranchStatus::CompleteLayer => {self.current_layer += 1; Ok(false)},
         }
     }
 
@@ -476,44 +479,46 @@ where
     }
 
     /// Generate n tiles at once
-    pub fn generate_n(&mut self, n: u32) -> Result<(), ImpossibleBoardError> {
+    pub fn generate_n(&mut self, n: u32) -> Result<bool, ImpossibleBoardError> {
+        let mut complete = false;
         for _ in 0..n {
             if self.generate_1()? {
+                complete = true;
                 break
             }
         };
-        Ok(())
+        Ok(complete)
     }
 
     /// Returns the [BranchStatus] of the current branch of the decision tree
     pub fn get_status(&self) -> BranchStatus {
-        let undecideds_left = self.tiles.iter().any(|v| v.iter().any(|v| v.iter().any(|t| match t {
+        let undecideds_left = self.tiles.get(self.current_layer).unwrap().iter().any(|v| v.iter().any(|t| match t {
             MaybeTile::Undecided(_) => true,
             MaybeTile::Decided(_) => false,
-        })));
+        }));
 
-        let impossibilities = self.tiles.iter().any(|v| v.iter().any(|v| v.iter().any(|t| match t {
+        let impossibilities = self.tiles.get(self.current_layer).unwrap().iter().any(|v| v.iter().any(|t| match t {
             MaybeTile::Undecided(possibilities) => possibilities.len() == 0,
             MaybeTile::Decided(_) => false,
-        })));
+        }));
 
-        let branch_end = self.tiles.iter().enumerate().all(|(k, v)| v.iter().enumerate().all(|(i, v)| v.iter().enumerate().all(|(j, t)| match t {
+        let branch_end = self.tiles.get(self.current_layer).unwrap().iter().enumerate().all(|(i, v)| v.iter().enumerate().all(|(j, t)| match t {
             MaybeTile::Undecided(possibilities) => {
                 if possibilities.len() > 0 {
                     if let Some(current_branch) = self.decision_stack.last() {
-                        if current_branch.deciding_coord == (i, j, k) {
+                        if current_branch.deciding_coord == (i, j, self.current_layer) {
                             if possibilities.len() <= current_branch.tried_tiles.len() {
                                 true
                             } else {
                                 false
                             }
-                        } else if current_branch.dead_ends.contains(&(i, j, k)) {
+                        } else if current_branch.dead_ends.contains(&(i, j, self.current_layer)) {
                             true
                         } else {
                             false
                         }
                     } else {
-                        if self.dead_ends.contains(&(i, j, k)) {
+                        if self.dead_ends.contains(&(i, j, self.current_layer)) {
                             true
                         } else {
                             false
@@ -524,10 +529,13 @@ where
                 }
             },
             MaybeTile::Decided(_) => true,
-        })));
+        }));
 
         match (impossibilities, branch_end, undecideds_left) {
-            (_, _, false) => BranchStatus::Complete,
+            (_, _, false) => match self.tiles.get(self.current_layer+1) {
+                Some(_) => BranchStatus::CompleteLayer,
+                None => BranchStatus::Complete,
+            },
             (true, _, _) => BranchStatus::DeadEnd,
             (_, true, _) => BranchStatus::DeadEnd,
             (_, _, _) => BranchStatus::Incomplete,
