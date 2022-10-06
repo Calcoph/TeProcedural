@@ -150,6 +150,8 @@ use std::{collections::HashSet};
 #[cfg(feature = "view3d")]
 use std::path::Path;
 
+use rand::distributions::WeightedIndex;
+use rand::prelude::Distribution;
 use rand::seq::IteratorRandom;
 #[cfg(feature = "view3d")]
 use te_renderer::model::ModelVertex;
@@ -331,21 +333,20 @@ where
                     if let Some(current_branch) = self.decision_stack.last_mut() {
                         let (row, col, layer) = current_branch.deciding_coord;
                         let mut rng = rand::thread_rng();
-                        let choice = match &self.tiles[layer][row][col] {
-                            MaybeTile::Undecided(possibilities) => *possibilities
+                        let mut weights = Vec::new(); // TODO: Take weights into account
+                        let options = match &self.tiles[layer][row][col] {
+                            MaybeTile::Undecided(possibilities) => possibilities
                                 .iter()
                                 .filter(|tile| !current_branch.tried_tiles.contains(tile))
-                                .flat_map(|tile| {
-                                    let mut v = Vec::new();
-                                    for _ in 0..tile.get_distribution(layer) {
-                                        v.push(tile);
-                                    }
-                                    v
+                                .map(|tile| {
+                                    weights.push(tile.get_distribution(layer));
+                                    tile
                                 })
-                                .choose(&mut rng)
-                                .unwrap(),
+                                .collect::<Vec<_>>(),
                             MaybeTile::Decided(_) => unreachable!(),
                         };
+                        let dist = WeightedIndex::new(&weights).unwrap();
+                        let choice = *options[dist.sample(&mut rng)];
                         current_branch.tried_tiles.insert(choice);
                         (choice, row, col, layer)
                     } else {
@@ -581,18 +582,17 @@ where
 
     fn make_decision(&mut self, row: usize, col: usize, layer: usize) -> T {
         let mut rng = rand::thread_rng();
-        let choice = match &self.tiles[layer][row][col] {
-            MaybeTile::Undecided(possibilities) => *possibilities.iter()
-                .flat_map(|tile| {
-                    let mut v = Vec::new();
-                    for _ in 0..tile.get_distribution(layer) {
-                        v.push(tile);
-                    }
-                    v
-                }).choose(&mut rng).unwrap(),
+        let mut weights = Vec::new();
+        let options = match &self.tiles[layer][row][col] {
+            MaybeTile::Undecided(possibilities) => possibilities.iter()
+                .map(|tile| {
+                    weights.push(tile.get_distribution(layer));
+                    tile
+                }).collect::<Vec<_>>(),
             MaybeTile::Decided(_) => unreachable!(),
         };
-        choice
+        let dist = WeightedIndex::new(&weights).unwrap();
+        *options[dist.sample(&mut rng)]
     }
 
     fn propagate(&mut self, tile: T, row: usize, col: usize, layer: usize) -> Vec<(usize, usize, usize)> {
