@@ -13,13 +13,15 @@ use te_player::event_loop::{self, Event};
 #[cfg(feature = "view3d")]
 use te_renderer::{initial_config::InitialConfiguration, state::GpuState};
 #[cfg(feature = "view3d")]
-use te_renderer::state::State as TeState;
+use te_renderer::state::TeState;
 
 #[cfg(feature = "view3d")]
 mod models;
 
 #[cfg(feature = "view3d")]
 fn main() {
+    use te_player::event_loop::PlaceholderTextSender;
+
     let (event_loop, gpu, window, te_state) = pollster::block_on(te_player::prepare(InitialConfiguration {
         font_dir_path: String::from("resources/font"),
         icon_path: String::from("resources/icon.png"),
@@ -31,7 +33,7 @@ fn main() {
     }, false)).unwrap();
 
     let mut state = State::new(gpu.clone(), te_state.clone());
-    state.te_state.borrow_mut().instances.place_sprite("white.png", &state.gpu.borrow(), Some((265.0, 100.0)), (1.0, 1.0, 0.0));
+    state.te_state.borrow_mut().place_sprite("white.png", &state.gpu.borrow(), Some((265.0, 100.0)), (1.0, 1.0, 0.0));
     let text = "Move with WASD
 Move up/down with spacebar/shift
 Pan with Q/E
@@ -47,7 +49,7 @@ Generate a new map with U";
             _ => unimplemented!()
         }).collect()).enumerate();
     for (height, line) in lines {
-        state.te_state.borrow_mut().instances.place_text(line, &gpu.borrow(), None, (5.0, 15.0*height as f32+5.0, 1.0));
+        state.te_state.borrow_mut().place_old_text(line, &gpu.borrow(), None, (5.0, 15.0*height as f32+5.0, 1.0));
     }
     match state.board.generate() {
         Ok(_) => {
@@ -83,7 +85,7 @@ Generate a new map with U";
         }
     };
     let event_handler = Box::new(event_handler);
-    event_loop::run(event_loop, window, gpu, te_state, event_handler);
+    event_loop::run(event_loop, window, gpu, te_state, PlaceholderTextSender::new(), event_handler);
 }
 
 #[cfg(not(feature = "view3d"))]
@@ -136,7 +138,7 @@ impl State {
     }
 
     fn draw_board(&mut self) {
-        self.te_state.borrow_mut().instances.forget_all_3d_instances();
+        self.te_state.borrow_mut().forget_all_3d_instances();
         self.board.load_models(&self.gpu.borrow(), &mut self.te_state.borrow_mut());
         self.board.draw(&self.gpu.borrow(), &mut self.te_state.borrow_mut());
     }

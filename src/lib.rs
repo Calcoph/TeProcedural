@@ -158,7 +158,7 @@ use te_renderer::model::ModelVertex;
 #[cfg(feature = "view3d")]
 use te_renderer::state::GpuState;
 #[cfg(feature = "view3d")]
-use te_renderer::state::State as TeState;
+use te_renderer::state::TeState;
 
 mod display;
 
@@ -701,7 +701,7 @@ where
                         MaybeTile::Undecided(_) => (),
                         MaybeTile::Decided(tile) => {
                             if tile.has_model() {
-                                te_state.instances.place_custom_model(&tile.get_name(), gpu, (j as f32,k as f32,i as f32), None);
+                                te_state.place_custom_model(&tile.get_name(), gpu, (j as f32,k as f32,i as f32), None);
                             }
                         },
                     }
@@ -718,7 +718,7 @@ where
                 Some((vertices, indices)) => {
                     let name = tile.get_name();
                     let model = get_model(gpu, te_state, name.clone(), vertices, indices);
-                    te_state.instances.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));            
+                    te_state.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));            
                 },
                 None => (),
             }
