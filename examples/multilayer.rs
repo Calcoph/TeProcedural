@@ -126,7 +126,7 @@ struct State {
 impl State {
     fn new(gpu: Rc<RefCell<GpuState>>, te_state: Rc<RefCell<TeState>>) -> State {
         let file = std::fs::read_to_string("resources/size.txt").unwrap();
-        let mut file = file.split("\n");
+        let mut file = file.lines();
         let width = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
         let length = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
         let height = u32::from_str_radix(file.next().unwrap(), 10).unwrap();

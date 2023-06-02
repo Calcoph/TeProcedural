@@ -8,9 +8,11 @@ use colored::Colorize;
 use procedural::{Board, Tile, Direction, CoordError};
 #[cfg(feature = "view3d")]
 use te_gamepad::gamepad::ControllerEvent;
+#[cfg(feature = "view3d")]
 use te_player::event_loop::TextSender;
 #[cfg(feature = "view3d")]
 use te_player::event_loop::{self, Event};
+#[cfg(feature = "view3d")]
 use te_renderer::state::Section;
 #[cfg(feature = "view3d")]
 use te_renderer::{initial_config::InitialConfiguration, state::GpuState};
@@ -42,7 +44,7 @@ Pan with Q/E
 Look up/down with Z/X
 Zoom in/out with R/F
 Generate a new map with U";
-    let lines = text.split("\n")
+    let lines = text.lines()
         .map(|s| s.chars().map(|c| match c {
             'A'..='Z' => c.to_lowercase().to_string() + "+",
             'a'..='z' => c.to_string() + "+",
@@ -93,7 +95,7 @@ Generate a new map with U";
 #[cfg(not(feature = "view3d"))]
 fn main() {
     let file = std::fs::read_to_string("resources/size.txt").unwrap();
-    let mut file = file.split("\n");
+    let mut file = file.lines();
     let width = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
     let length = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
     let height = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
@@ -128,7 +130,7 @@ struct State {
 impl State {
     fn new(gpu: Rc<RefCell<GpuState>>, te_state: Rc<RefCell<TeState>>) -> State {
         let file = std::fs::read_to_string("resources/size.txt").unwrap();
-        let mut file = file.split("\n");
+        let mut file = file.split("\r\n");
         let width = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
         let length = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
         let height = u32::from_str_radix(file.next().unwrap(), 10).unwrap();
