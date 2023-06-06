@@ -286,21 +286,21 @@ impl Tile for ExampleTile {
     }
 
     #[cfg(feature = "view3d")]
-    fn get_model(&self) -> Option<(Vec<te_renderer::model::ModelVertex>, Vec<u32>)> {
+    fn get_model(&self) -> Option<(Vec<te_renderer::model::ModelVertex>, Vec<u32>, String)> {
         match self {
-            ExampleTile::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Tree => Some((models::TREE_V.into(), models::TREE_I.into())),
+            ExampleTile::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "water.png".to_string())),
+            ExampleTile::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "ground.png".to_string())),
+            ExampleTile::Tree => Some((models::TREE_V.into(), models::TREE_I.into(), "tree.png".to_string())),
             ExampleTile::House(dir) => match dir {
-                Direction4::North => Some((models::HOUSE_N_V.into(), models::HOUSE_N_I.into())),
-                Direction4::East => Some((models::HOUSE_E_V.into(), models::HOUSE_E_I.into())),
-                Direction4::South => Some((models::HOUSE_S_V.into(), models::HOUSE_S_I.into())),
-                Direction4::West => Some((models::HOUSE_W_V.into(), models::HOUSE_W_I.into())),
+                Direction4::North => Some((models::HOUSE_N_V.into(), models::HOUSE_N_I.into(), "house.png".to_string())),
+                Direction4::East => Some((models::HOUSE_E_V.into(), models::HOUSE_E_I.into(), "house.png".to_string())),
+                Direction4::South => Some((models::HOUSE_S_V.into(), models::HOUSE_S_I.into(), "house.png".to_string())),
+                Direction4::West => Some((models::HOUSE_W_V.into(), models::HOUSE_W_I.into(), "house.png".to_string())),
             },
-            ExampleTile::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Mountain => Some((models::MOUNTAIN_V.into(), models::MOUNTAIN_I.into())),
-            ExampleTile::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "road.png".to_string())),
+            ExampleTile::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "hut.png".to_string())),
+            ExampleTile::Mountain => Some((models::MOUNTAIN_V.into(), models::MOUNTAIN_I.into(), "mountain.png".to_string())),
+            ExampleTile::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "sand.png".to_string())),
             ExampleTile::Air => None, // Air is invisible
         }
     }

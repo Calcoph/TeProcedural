@@ -715,9 +715,9 @@ where
     pub fn load_models(&self, gpu: &GpuState, te_state: &mut TeState) {
         for tile in T::all() {
             match tile.get_model() {
-                Some((vertices, indices)) => {
+                Some((vertices, indices, texture_name)) => {
                     let name = tile.get_name();
-                    let model = get_model(gpu, te_state, name.clone(), vertices, indices);
+                    let model = get_model(gpu, te_state, name.clone(), vertices, indices, texture_name);
                     te_state.place_custom_model(&name, gpu, (-1000.0,0.0,0.0), Some(model));            
                 },
                 None => (),
@@ -789,8 +789,8 @@ where
 }
 
 #[cfg(feature = "view3d")]
-fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec<ModelVertex>, indices: Vec<u32>) -> te_renderer::model::Model {
-    let image_path = Path::new("resources").join("tiles").join(format!("{name}.png"));
+fn get_model(gpu: &GpuState, te_state: &mut TeState, name: String, vertices: Vec<ModelVertex>, indices: Vec<u32>, texture_name: String) -> te_renderer::model::Model {
+    let image_path = Path::new("resources").join("tiles").join(texture_name);
     let img = image::open(image_path).unwrap();
     let img = img.as_rgba8().unwrap();
     let texture = te_renderer::texture::Texture::from_dyn_image(
@@ -871,7 +871,7 @@ macro_rules! tile {
         fn get_name(&self) -> String;
         #[cfg(feature = "view3d")]
         /// If the model has a model, returns its vertex and triangle indices
-        fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>)>;
+        fn get_model(&self) -> Option<(Vec<ModelVertex>, Vec<u32>, String)>;
         #[cfg(feature = "view3d")]
         /// If this tile has a model or not (is invisible)
         fn has_model(&self) -> bool;

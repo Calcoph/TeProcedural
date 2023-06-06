@@ -334,29 +334,29 @@ impl Tile for ExampleTile {
     }
 
     #[cfg(feature = "view3d")]
-    fn get_model(&self) -> Option<(Vec<te_renderer::model::ModelVertex>, Vec<u32>)> {
+    fn get_model(&self) -> Option<(Vec<te_renderer::model::ModelVertex>, Vec<u32>, String)> {
         match self {
-            ExampleTile::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Tree => Some((models::TREE_V.into(), models::TREE_I.into())),
+            ExampleTile::Water => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "water.png".to_string())),
+            ExampleTile::Ground => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "ground.png".to_string())),
+            ExampleTile::Tree => Some((models::TREE_V.into(), models::TREE_I.into(), "tree.png".to_string())),
             ExampleTile::House(dir) => match dir {
-                Direction6::North => Some((models::HOUSE_N_V.into(), models::HOUSE_N_I.into())),
-                Direction6::East => Some((models::HOUSE_E_V.into(), models::HOUSE_E_I.into())),
-                Direction6::South => Some((models::HOUSE_S_V.into(), models::HOUSE_S_I.into())),
-                Direction6::West => Some((models::HOUSE_W_V.into(), models::HOUSE_W_I.into())),
+                Direction6::North => Some((models::HOUSE_N_V.into(), models::HOUSE_N_I.into(), "house.png".to_string())),
+                Direction6::East => Some((models::HOUSE_E_V.into(), models::HOUSE_E_I.into(), "house.png".to_string())),
+                Direction6::South => Some((models::HOUSE_S_V.into(), models::HOUSE_S_I.into(), "house.png".to_string())),
+                Direction6::West => Some((models::HOUSE_W_V.into(), models::HOUSE_W_I.into(), "house.png".to_string())),
                 _ => unreachable!()
             },
-            ExampleTile::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
-            ExampleTile::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Road => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "road.png".to_string())),
+            ExampleTile::Hut => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "hut.png".to_string())),
             ExampleTile::Mountain(dir) => match dir {
-                Direction6::North => Some((models::MOUNTAIN_N_V.into(), models::MOUNTAIN_N_I.into())),
-                Direction6::East => Some((models::MOUNTAIN_E_V.into(), models::MOUNTAIN_E_I.into())),
-                Direction6::South => Some((models::MOUNTAIN_S_V.into(), models::MOUNTAIN_S_I.into())),
-                Direction6::West => Some((models::MOUNTAIN_W_V.into(), models::MOUNTAIN_W_I.into())),
-                Direction6::Up => Some((models::MOUNTAIN_U_V.into(), models::MOUNTAIN_U_I.into())),
-                Direction6::Down => Some((models::MOUNTAIN_D_V.into(), models::MOUNTAIN_D_I.into())),
+                Direction6::North => Some((models::MOUNTAIN_N_V.into(), models::MOUNTAIN_N_I.into(), "mountain.png".to_string())),
+                Direction6::East => Some((models::MOUNTAIN_E_V.into(), models::MOUNTAIN_E_I.into(), "mountain.png".to_string())),
+                Direction6::South => Some((models::MOUNTAIN_S_V.into(), models::MOUNTAIN_S_I.into(), "mountain.png".to_string())),
+                Direction6::West => Some((models::MOUNTAIN_W_V.into(), models::MOUNTAIN_W_I.into(), "mountain.png".to_string())),
+                Direction6::Up => Some((models::MOUNTAIN_U_V.into(), models::MOUNTAIN_U_I.into(), "mountain.png".to_string())),
+                Direction6::Down => Some((models::MOUNTAIN_D_V.into(), models::MOUNTAIN_D_I.into(), "mountain.png".to_string())),
             },
-            ExampleTile::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into())),
+            ExampleTile::Sand => Some((models::SQUARE_V.into(), models::SQUARE_I.into(), "sand.png".to_string())),
             ExampleTile::Air => None, // Air is invisible
         }
     }
